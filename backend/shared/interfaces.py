@@ -26,5 +26,5 @@ class SimulationResult(BaseModel):
     probabilities: dict[str, float]
     #Lo mismo pero con probabilidades
     state_vector: list[complex] #wtffff hay un tipo primitivo complex
-    circuit_diagram: 
+    #circuit_diagram: 
     
