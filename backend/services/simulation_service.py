@@ -55,7 +55,7 @@ def simulate_circuit(circuit_dict: dict, start_time: float) -> dict:
                         "error": "Statevector simulation cannot be run with measurement instructions."
                     }
         
-        output["results"] = run_statevector_simulation(qc=q_circuit).real.tolist()
+        output["results"] = run_statevector_simulation(qc=q_circuit)
     else:
         return  {
                     "output": None,
