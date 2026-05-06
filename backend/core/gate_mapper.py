@@ -13,6 +13,11 @@ GATE_MAP = {
     "CX": lambda qc, q, p: qc.cx(q[0], q[1]),
     "SWAP": lambda qc, q, p: qc.swap(q[0], q[1]),
     "CXX": lambda qc, q, p: qc.ccx(q[0], q[1], q[2]), # Toffoli gate
+    "SUM": lambda qc, q, p: (
+        qc.cx(q[0], q[2]),
+        qc.cx(q[1], q[2]),
+        qc.ccx(q[0], q[1], q[3])
+    )
 }
 
 def apply_gate(qc: QuantumCircuit, gate_name: str, qubits: list[int], params: list[float] = None):
