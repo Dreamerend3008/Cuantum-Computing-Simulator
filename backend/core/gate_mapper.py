@@ -1,6 +1,7 @@
 from qiskit import QuantumCircuit
 from .custom_circuits.half_adder import half_adder
 from .custom_circuits.full_adder import full_adder, old_full_adder
+from .custom_circuits.qft import qft, iqft
 
 GATE_MAP = {
     "H": lambda qc, q, p: qc.h(q[0]),
@@ -17,7 +18,10 @@ GATE_MAP = {
     "CXX": lambda qc, q, p: qc.ccx(q[0], q[1], q[2]), # Toffoli gate
     "HALF_ADD": lambda qc, q, p: half_adder(qc, q),
     "FULL_ADD": lambda qc, q, p: full_adder(qc, q),
-    "OLD_FULL_ADD": lambda qc, q, p: old_full_adder(qc, q)
+    "OLD_FULL_ADD": lambda qc, q, p: old_full_adder(qc, q),
+    "QFT": lambda qc, q, p: qft(qc, q),
+    "IQFT": lambda qc, q, p: iqft(qc, q),
+    "INITIALIZE": lambda qc, q, p: qc.initialize(p, q)
 }
 
 def apply_gate(qc: QuantumCircuit, gate_name: str, qubits: list[int], params: list[float] = None):
