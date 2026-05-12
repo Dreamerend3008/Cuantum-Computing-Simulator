@@ -23,7 +23,5 @@ def build_circuit(num_qubits: int, num_clbits: int ,instructions: list[dict]) ->
         else:
             params = instr.get("params", [])
             apply_gate(qc, name, qubits, params)
-    
-
     qc = qc.reverse_bits()
     return qc

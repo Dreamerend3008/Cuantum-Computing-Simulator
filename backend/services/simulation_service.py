@@ -1,5 +1,6 @@
 from simulation.qiskit_engine import run_shot_simulator, run_statevector_simulation
 from core.qiskit_builder import build_circuit
+from .circuit_service import build_circuit_from_dict
 import numpy as np
 import time
 
@@ -20,14 +21,15 @@ example_dict = {
 }
 
 def simulate_circuit(circuit_dict: dict, start_time: float) -> dict:
+    
+    q_circuit = build_circuit_from_dict(circuit_dict)
+    
+    # Decompose the circuit so Aer Simulator can understand high-level gates like QFT
+    q_circuit = q_circuit.decompose()
 
-    runner_mode = circuit_dict.get("runner_mode", "")
-    num_qubits = circuit_dict.get("num_qubits", 0)
-    num_clbits = circuit_dict.get("num_clbits", 0)
     instructions = circuit_dict.get("instructions", [])
 
-    q_circuit = build_circuit(num_qubits, num_clbits, instructions)
-
+    runner_mode = circuit_dict.get("runner_mode", "")
     output = {}
     if runner_mode == "shot":
 
@@ -45,7 +47,8 @@ def simulate_circuit(circuit_dict: dict, start_time: float) -> dict:
 
         output["info"] = run_shot_simulator(qc=q_circuit, number_shots=shots, n_model=noise_model)
         
-        output["results"] = output["info"].get_counts()
+        raw_counts = output["info"].get_counts()
+        output["results"] = {k[::-1]: v for k, v in raw_counts.items()}
     elif runner_mode == "statevector":
         # Measurment breaks the logic expected for a staetvector simulator
         if any(instr.get("name") == "MEASURE_ALL" or instr.get("name") == "MEASURE" for instr in instructions):
@@ -55,7 +58,7 @@ def simulate_circuit(circuit_dict: dict, start_time: float) -> dict:
                         "error": "Statevector simulation cannot be run with measurement instructions."
                     }
         
-        output["results"] = run_statevector_simulation(qc=q_circuit).real.tolist()
+        output["results"] = run_statevector_simulation(qc=q_circuit)
     else:
         return  {
                     "output": None,

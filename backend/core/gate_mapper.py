@@ -1,23 +1,7 @@
 from qiskit import QuantumCircuit
-
-def half_adder(qc: QuantumCircuit, q: list[int]):
-
-    qc.cx(q[0], q[2])
-    qc.cx(q[1], q[2])
-    qc.ccx(q[0], q[1], q[3])
-
-
-def full_adder(qc: QuantumCircuit, q: list[int]):
-    
-    # Paso 1: Primer Half Adder (Suma A y B)
-    half_adder(qc, [q[0], q[1], q[3], q[4]])
-    
-    # Paso 2: Segundo Half Adder (Suma la 'Suma Parcial' S1 y Cin)
-    half_adder(qc, [q[3], q[2], q[6], q[5]])
-    
-    # Paso 3: Acarreo Final (Cout = C1 XOR C2) Pero C1 y C2 no pueden ser 1 al mismo tiempo
-    qc.cx(q[4], q[7])
-    qc.cx(q[5], q[7])
+from .custom_circuits.half_adder import half_adder
+from .custom_circuits.full_adder import full_adder, old_full_adder
+from .custom_circuits.qft import qft, iqft
 
 GATE_MAP = {
     "H": lambda qc, q, p: qc.h(q[0]),
@@ -33,7 +17,11 @@ GATE_MAP = {
     "SWAP": lambda qc, q, p: qc.swap(q[0], q[1]),
     "CXX": lambda qc, q, p: qc.ccx(q[0], q[1], q[2]), # Toffoli gate
     "HALF_ADD": lambda qc, q, p: half_adder(qc, q),
-    "FULL_ADD": lambda qc, q, p: full_adder(qc, q)
+    "FULL_ADD": lambda qc, q, p: full_adder(qc, q),
+    "OLD_FULL_ADD": lambda qc, q, p: old_full_adder(qc, q),
+    "QFT": lambda qc, q, p: qft(qc, q),
+    "IQFT": lambda qc, q, p: iqft(qc, q),
+    "INITIALIZE": lambda qc, q, p: qc.initialize(p, q)
 }
 
 def apply_gate(qc: QuantumCircuit, gate_name: str, qubits: list[int], params: list[float] = None):
