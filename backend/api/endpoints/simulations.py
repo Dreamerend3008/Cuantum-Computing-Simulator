@@ -18,25 +18,37 @@ def executeSimulation(ci: CircuitInput):
         run the simulation
     """
     try:
+
         data = ci.dict_builder()
         result = simulate_circuit(data, time.time())
+
     except QiskitError as e:
+
         raise HTTPException(status_code=400, detail=f"Circuit not valid for simulator: {str(e)}") from e
+    
     except (ValueError, TypeError, KeyError) as e:
+
         raise HTTPException(status_code=422, detail=f"Invalid simulation input: {str(e)}") from e
 
     if not result.get("success"):
+
         raise HTTPException(status_code=400, detail=result.get("error", "Simulation failed"))
 
     raw_results = result.get("output", {}).get("results", {})
     if ci.runner_mode == "shot":
-        counts = {k: int(v) for k, v in raw_results.items()}
-        total_shots = sum(counts.values()) or 1
+
+        counts = {
+            k: int(v) for k, v in raw_results.items()
+        }
+
+        total_shots = sum(counts.values())
         probabilities = {k: v / total_shots for k, v in counts.items()}
         out = SimulationResult(measure=counts, real_probabilities=probabilities, state_vector=None)
         # Si algo acá Harry tira paro (aquí va state_vector cuando lo quieras incluir)
     else:
-        amplitudes = {k: float(v) for k, v in raw_results.items()}
+        amplitudes = {
+            k: float(v) for k, v in raw_results.items()
+        }
         probabilities = {k: abs(v) ** 2 for k, v in amplitudes.items()}
         out = SimulationResult(measure={}, real_probabilities=probabilities, state_vector=None)
         # Si algo acá Harry tira paro (aquí va state_vector cuando lo quieras incluir)
