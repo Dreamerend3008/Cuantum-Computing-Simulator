@@ -42,9 +42,4 @@ class CircuitInput(BaseModel):
 
 #Output classes
 class SimulationResult(BaseModel):
-    measure: dict[str, int] 
-    #There are the measurements of a experiment
-    real_probabilities: dict[str, float]
-    #There are the probabilities of a set of experiments
-
-    state_vector: list[complex] | None = None
+    probabilities : dict[str, float]
