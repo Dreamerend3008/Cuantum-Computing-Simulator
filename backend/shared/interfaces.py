@@ -1,30 +1,45 @@
-from pydantic import BaseModel
-from typing import Optional
-
-#Claude me recomendó estas clases de encapsulamiento xd
-
-
-#Input classes
-class Gate(BaseModel):
-    name: str
-    qubit: int
-    target: Optional[int] = None 
-    #Just for the CNOT gate, when you have to put a 0 in control
+from typing import Literal
+from pydantic import BaseModel, Field
+"""
+Literal, de typing restringe los valores del string a una lista [val1, val2]
+Mientras que Field() hacer verificaciones de pydantic sobre tipado
+                ->ej: ge = 0 es greater or equal than 0.
+"""
 
 class CircuitInput(BaseModel):
-    num_qubits: int
-    gates: list[Gate]
-    shots: int 
-    #How many experiments you will realize     
+    initial_state: str
+    num_qubits: int = Field(ge = 1)
+    instructions: list[dict]
+    #Check quisquit_buider to understand instructions form
+    shots: int = Field(ge = 1)
+    num_clbits: int = Field(ge = 0)
+    noise_model: Literal["depolarizing", "thermal_relaxation"] | None = None
+    runner_mode: Literal["shot", "statevector"]
+
+    #Return a JSON with the info of a circuit.     
+    def dict_builder(self):
+        initial_instructions = []
+        for c, i in zip(self.initial_state, range(self.num_qubits)):
+            if c == '1':
+                initial_instructions.append({"name": "X", "qubits": [i]})
+        
+        instructions = list(self.instructions)
+        if self.runner_mode == 'shot':
+            instructions.append({"name": "MEASURE_ALL"})
+
+        instructions = initial_instructions + instructions
+        
+        return {
+            "name": "Testing",
+            "num_qubits": self.num_qubits,
+            "num_clbits": self.num_clbits,
+            "instructions": instructions,
+            "runner_mode": self.runner_mode,
+            "noise_model": self.noise_model,
+            "shots": self.shots
+        }
 
 
 #Output classes
-#Como toca tirar JSON, entonces usamos diccionarios
 class SimulationResult(BaseModel):
-    measurements: dict[str, int] 
-    #Son las medidas del estilo "00": "400", o "número": "cantidad de caidas allí"
-    probabilities: dict[str, float]
-    #Lo mismo pero con probabilidades
-    state_vector: list[complex] #wtffff hay un tipo primitivo complex
-    #circuit_diagram: 
-    
+    probabilities : dict[str, float]
