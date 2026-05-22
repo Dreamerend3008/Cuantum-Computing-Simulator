@@ -1,0 +1,172 @@
+---
+import Layout from '../layouts/Layout.astro';
+---
+
+<Layout title="Kuantum" showNavAndFooter={false}>
+    <section class="hero-section">
+        <div class="hero-content">
+            <h1 class="main-title">Kuantum</h1>
+            <p class="subtitle">La herramienta de simulación y aprendizaje de circuitos cuánticos</p>
+            <div class="button-group">
+                <a href="/teoria" class="btn btn-primary">Aprender</a>
+                <a href="/simulador" class="btn btn-primary">Simular</a>
+            </div>
+        </div>
+        <div class="hero-logo-container">
+            <img src="/logo.png" alt="Logo Kuantum" class="hero-logo" />
+        </div>
+    </section>
+</Layout>
+
+<style is:global>
+    /* Reseteo global para matar el scroll que generan los navegadores por defecto */
+    html, body {
+        margin: 0;
+        padding: 0;
+        width: 100vw;
+        height: 100vh;
+        overflow: hidden; /* Esto bloquea absolutamente el scroll en los 2 lados */
+        box-sizing: border-box;
+    }
+
+    *, *:before, *:after {
+        box-sizing: inherit;
+    }
+</style>
+
+<style>
+    /* Definición de colores base (Modo Claro) */
+    :root {
+        --text-main: #2C3E50;
+        --koala-grey: #808e8f;
+        --accent-purple: #e938b0;
+    }
+
+    .hero-section {
+        display: flex;
+        flex-direction: column-reverse;
+        align-items: center;
+        justify-content: center;
+        height: 100dvh; /* Usa 100dvh en lugar de min-height para ajuste estricto */
+        width: 100%;
+        padding: 2rem;
+        gap: 2rem; /* Reduje un poco el gap para que no se apriete tanto en celular */
+    }
+
+    .hero-content {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        flex: 1;
+        width: 100%;
+        justify-content: center;
+    }
+
+    .hero-logo-container {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex: 1;
+        width: 100%;
+        max-height: 45vh; /* Limita la altura del logo para que el texto siempre quepa */
+    }
+
+    .hero-logo {
+        width: 100%;
+        max-width: 350px; /* Un poco más pequeño para evitar desbordes */
+        height: 100%;
+        object-fit: contain;
+    }
+
+    .main-title {
+        font-size: clamp(2rem, 5vw, 4rem); 
+        margin-bottom: 0.5rem;
+        color: var(--text-main);
+        font-family: 'Quicksand', sans-serif;
+        font-weight: 900;
+        letter-spacing: -0.02em;
+    }
+
+    .subtitle {
+        font-size: clamp(0.9rem, 2vw, 1.25rem);
+        margin-bottom: 2rem;
+        color: var(--koala-grey);
+        max-width: 600px;
+        line-height: 1.4;
+    }
+
+    .button-group {
+        display: flex;
+        gap: 1rem;
+        justify-content: center;
+        flex-wrap: wrap;
+    }
+
+    .btn {
+        padding: 0.75rem 2rem;
+        border-radius: 8px;
+        font-family: 'Inter', sans-serif;
+        font-weight: 600;
+        font-size: 1rem;
+        text-decoration: none;
+        transition: all 0.3s ease;
+        cursor: pointer;
+        text-align: center;
+    }
+
+    .btn-primary {
+        background-color: var(--accent-purple);
+        color: #FFFFFF;
+        box-shadow: 0 4px 14px rgba(233, 56, 176, 0.3);
+    }
+
+    .btn-primary:hover {
+        background-color: var(--accent-purple);
+        box-shadow: 0 4px 14px rgba(233, 56, 176, 0.4);
+        transform: translateY(-2px);
+        color: #1A1A1D;
+    }
+
+    .btn-secondary {
+        background-color: transparent;
+        color: var(--accent-purple);
+        border: 2px solid var(--accent-purple);
+    }
+
+    .btn-secondary:hover {
+        background-color: rgba(233, 56, 176, 0.1);
+        transform: translateY(-2px);
+    }
+
+/* Versión de escritorio: texto a la izquierda, logo a la derecha */
+    @media (min-width: 768px) {
+        .hero-section {
+            flex-direction: row;
+            text-align: left;
+            padding: 4rem;
+            gap: 2rem; /* Espacio entre el bloque de texto y el logo */
+        }
+
+        .hero-content {
+            align-items: flex-start;
+            text-align: left;
+            /* Esta línea empuja los títulos y botones hacia la derecha */
+            padding-left: 5rem; 
+        }
+
+        .button-group {
+            justify-content: flex-start;
+        }
+        
+        .hero-logo-container {
+            max-height: none;
+            /* Opcional: padding-right para que el logo no pegue al borde derecho */
+            padding-right: 2rem; 
+        }
+        
+        .hero-logo {
+            max-width: 450px; /* Un poco más grande en desktop ya que tenemos espacio */
+        }
+    }
+</style>
