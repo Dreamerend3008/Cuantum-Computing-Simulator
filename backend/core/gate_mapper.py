@@ -3,6 +3,7 @@ from .custom_circuits.half_adder import half_adder
 from .custom_circuits.full_adder import full_adder, old_full_adder
 from .custom_circuits.qft import qft, iqft
 from .custom_circuits.mod_exp import mod_exp
+from services.custom_gate_service import get_custom_gate
 
 GATE_MAP = {
     "H": lambda qc, q, p: qc.h(q[0]),
@@ -30,7 +31,19 @@ def apply_gate(qc: QuantumCircuit, gate_name: str, qubits: list[int], params: li
     if params is None:
         params = []
     
-    if gate_name not in GATE_MAP:
-        raise ValueError(f"Gate {gate_name} not supported.")
-        
-    GATE_MAP[gate_name](qc, qubits, params)
+    if gate_name in GATE_MAP:
+        GATE_MAP[gate_name](qc, qubits, params)
+        return
+
+    custom_gate = get_custom_gate(gate_name)
+    if custom_gate:
+        if len(qubits) != custom_gate['num_qubits']:
+            raise ValueError(f"Gate {gate_name} requires {custom_gate['num_qubits']} qubits, but got {len(qubits)}")
+        for instr in custom_gate['instructions']:            
+            sub_name = instr.get('name')
+            mapped_qubits = [qubits[i] for i in instr.get('qubits', [])]
+            sub_params = instr.get('params', [])
+
+            apply_gate(qc, sub_name, mapped_qubits, sub_params)
+        return
+    raise ValueError(f"Unknown gate: {gate_name}")

@@ -1,8 +1,6 @@
 from qiskit import QuantumCircuit
 
 def c_amod15(a, power):
-    """Controlled multiplication by a mod 15.
-    Works for a in [2,4,7,8,11,13]."""
     if a not in [2, 4, 7, 8, 11, 13]:
         raise ValueError("'a' must be 2, 4, 7, 8, 11 or 13")
     
@@ -25,21 +23,14 @@ def c_amod15(a, power):
                 
     U = U.to_gate()
     U.name = f"{a}^{power} mod 15"
-    c_U = U.control(1) # 1 control qubit
+    c_U = U.control(1)
     return c_U
 
 def mod_exp(qc: QuantumCircuit, q: list[int], p: list[float]):
-    """
-    Applies controlled modular exponentiation.
-    p = [a, N] e.g., p = [7, 15]
-    q = [control_qubits..., target_qubits...] where the last 4 qubits are the target.
-    """
     if len(p) < 2:
         raise ValueError("Params 'p' must contain [a, N]")
-    
     a = int(p[0])
     N = int(p[1])
-    
     if N != 15:
         raise NotImplementedError("Currently only N=15 is supported (requires 4 target qubits).")
         
