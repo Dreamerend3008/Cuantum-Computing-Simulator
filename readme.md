@@ -1,1 +1,2 @@
-*Launch the app in terminal with: uvicorn main:app --reload*
+*Launch the app in terminal with: python3 main.py*
+Oli

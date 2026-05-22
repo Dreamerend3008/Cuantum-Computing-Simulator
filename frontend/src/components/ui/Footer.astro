@@ -1,0 +1,45 @@
+---
+---
+
+<footer class="footer global-nav-footer">
+    <div class="footer-content">
+        <p>&copy; 2026 Kuantum Simulator</p>
+        <div class="footer-links">
+            <a href="https://github.com/Dreamerend3008/Cuantum-Computing-Simulator" target="_blank" rel="noopener noreferrer">Repositorio</a>
+        </div>
+    </div>
+</footer>
+
+<style>
+    .footer {
+        padding: 2rem;
+        margin-top: auto; /* Fuerza que se sitúe al fondo por el flex: 1 del main en Layout.astro */
+    }
+
+    .footer-content {
+        max-width: 1200px;
+        margin: 0 auto;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-family: 'Inter', sans-serif;
+        font-size: 0.95rem;
+    }
+
+    .footer p {
+        margin: 0;
+        opacity: 0.9;
+    }
+
+    .footer-links a {
+        text-decoration: none;
+        transition: color 0.3s ease, opacity 0.3s ease;
+        font-weight: 500;
+        opacity: 0.9;
+    }
+
+    .footer-links a:hover {
+        color: var(--secondary-cyan);
+        opacity: 1;
+    }
+</style>
