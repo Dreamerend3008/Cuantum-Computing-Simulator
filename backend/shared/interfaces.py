@@ -43,3 +43,12 @@ class CircuitInput(BaseModel):
 #Output classes
 class SimulationResult(BaseModel):
     probabilities : dict[str, float]
+
+class CustomGateDef(BaseModel):
+    name: str
+    num_qubits: int
+    instructions: list[dict]
+
+    @classmethod
+    def from_dict(cls, gate_dict: dict):
+        return cls(**gate_dict)
