@@ -2,6 +2,7 @@ from qiskit import QuantumCircuit
 from .custom_circuits.half_adder import half_adder
 from .custom_circuits.full_adder import full_adder, old_full_adder
 from .custom_circuits.qft import qft, iqft
+from .custom_circuits.mod_exp import mod_exp
 
 GATE_MAP = {
     "H": lambda qc, q, p: qc.h(q[0]),
@@ -21,6 +22,7 @@ GATE_MAP = {
     "OLD_FULL_ADD": lambda qc, q, p: old_full_adder(qc, q),
     "QFT": lambda qc, q, p: qft(qc, q),
     "IQFT": lambda qc, q, p: iqft(qc, q),
+    "MOD_EXP": lambda qc, q, p: mod_exp(qc, q, p),
     "INITIALIZE": lambda qc, q, p: qc.initialize(p, q)
 }
 
