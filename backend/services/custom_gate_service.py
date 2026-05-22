@@ -12,8 +12,8 @@ from shared.interfaces import CustomGateDef
         ]
     }
 """
-
-DATA_DIR = os.path.join(os.path.dirname(__file__), 'data')
+MAIN_DIR = os.path.dirname(os.path.dirname(__file__))
+DATA_DIR = os.path.join(MAIN_DIR, 'data')
 GATES_FILE = os.path.join(DATA_DIR, 'custom_gates.json')
 
 def init_data_file():
@@ -32,7 +32,7 @@ def get_custom_gate(name: str) -> CustomGateDef:
     gates = get_all_gates()
     for gate in gates:
         if gate['name'] == name:
-            return gate
+            return CustomGateDef.from_dict(gate)
     return None
 
 def delete_custom_gate(name: str):
