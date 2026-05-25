@@ -6,17 +6,10 @@ import time
 
 router = APIRouter()
 
-@router.post("/")
-def createSimulation(simulation: dict):
-    return {"message": "Simulation saved"}
 
 @router.post("/run")
-def executeSimulation(ci: CircuitInput):
-    """
-        So, what i understand is that this is the standard form to connect our
-        base logic (Harry's logic) with the api. this func is called when you
-        run the simulation
-    """
+def executeSimulation(ci: CircuitInput) -> dict:
+
     try:
         data = ci.dict_builder() 
         result = simulate_circuit(data, time.time())

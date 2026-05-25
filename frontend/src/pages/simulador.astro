@@ -169,16 +169,16 @@ const apiBase = import.meta.env.PUBLIC_API_BASE_URL;
       div.className = "instruction-item"
       div.innerHTML = `
         <span>${inst.name} — qubits: [${inst.qubits.map(q => q + 1).join(", ")}]${inst.params ? " — params: " + inst.params : ""}</span>
-        <button onclick="removeInstruction(${index})">✕</button>
+        <button class="remove-btn">✕</button>
       `
+      div.querySelector(".remove-btn").addEventListener('click', () => {
+        instructions.splice(index, 1)
+        renderInstructions()
+      })
       instructionsList.appendChild(div)
     })
   }
 
-  function removeInstruction(index) {
-    instructions.splice(index, 1)
-    renderInstructions()
-  }
   // ============================================================
   // [/IA]
   // ============================================================

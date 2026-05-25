@@ -1,1 +1,1 @@
-from .interfaces import CircuitInput, SimulationResult
+from .interfaces import CircuitInput, SimulationResult, CustomGateDef

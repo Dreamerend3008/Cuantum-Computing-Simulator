@@ -16,6 +16,7 @@ MAIN_DIR = os.path.dirname(os.path.dirname(__file__))
 DATA_DIR = os.path.join(MAIN_DIR, 'data')
 GATES_FILE = os.path.join(DATA_DIR, 'custom_gates.json')
 
+
 def init_data_file():
     if not os.path.exists(GATES_FILE):
         os.makedirs(DATA_DIR, exist_ok=True)
