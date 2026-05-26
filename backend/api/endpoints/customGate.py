@@ -10,7 +10,7 @@ def create_custom_gate(cg: CustomGateDef):
     # no creo que hagan falta verificaciones de formato, debido a que las 
     # instrucciones son de compuertas que soportamos en el sistema y el formato 
     # se manda directamente desde el front asi que no deberian haber errores de formato.
-    #bro además las verificaciones de formato las hace Pydantic según cómo haces la clase
+    #bro además las verificaciones de formato las hace Pydantic según cómo haces la clase   
     save_custom_gate(cg)
     return {"status": "success"}
 
