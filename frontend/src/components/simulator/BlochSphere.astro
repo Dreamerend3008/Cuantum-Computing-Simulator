@@ -1,0 +1,1191 @@
+---
+---
+
+<div class="bloch-module">
+    <div class="bloch-header">
+        <h3>Esfera de Bloch Interactiva 3D</h3>
+        <p>Visualiza el estado de cada qubit. Selecciona un qubit para ver su representación en la esfera.</p>
+    </div>
+
+    <div class="bloch-container">
+        <!-- Panel de Controles -->
+        <div class="bloch-controls">
+            <!-- Qubit Selector Tabs -->
+            <div class="qubit-selector">
+                <h4>Seleccionar Qubit</h4>
+                <div class="qubit-tabs" id="qubit-tabs">
+                    <button class="qubit-tab active" data-qubit="0">Q0</button>
+                    <button class="qubit-tab" data-qubit="1">Q1</button>
+                </div>
+            </div>
+
+            <hr class="divider" />
+
+            <!-- Gate animation info -->
+            <div class="gate-info" id="gate-info" style="display: none;">
+                <div class="gate-badge" id="gate-badge">H</div>
+                <span class="gate-desc" id="gate-desc">Hadamard — Rotación π alrededor del eje (X+Z)/√2</span>
+            </div>
+
+            <div class="bloch-stats">
+                <div class="stat-item"><strong>x:</strong> <span id="stat-x">0.00</span></div>
+                <div class="stat-item"><strong>y:</strong> <span id="stat-y">0.00</span></div>
+                <div class="stat-item"><strong>z:</strong> <span id="stat-z">1.00</span></div>
+                <div class="stat-item"><strong>θ:</strong> <span id="stat-theta">0.00</span> rad</div>
+                <div class="stat-item"><strong>φ:</strong> <span id="stat-phi">0.00</span> rad</div>
+            </div>
+
+            <hr class="divider" />
+
+            <div class="state-presets">
+                <span>Presets:</span>
+                <button class="preset-btn" data-state="0">|0⟩</button>
+                <button class="preset-btn" data-state="1">|1⟩</button>
+                <button class="preset-btn" data-state="+">|+⟩</button>
+                <button class="preset-btn" data-state="-">|−⟩</button>
+                <button class="preset-btn" data-state="i">|i⟩</button>
+                <button class="preset-btn" data-state="-i">|−i⟩</button>
+            </div>
+
+            <hr class="divider" />
+
+            <div class="history-controls">
+                <h4>Transición de Estados</h4>
+                <div class="history-btns">
+                    <button id="btn-prev-state" class="btn-bloch btn-outline" disabled>← Anterior</button>
+                    <button id="btn-next-state" class="btn-bloch btn-outline" disabled>Actual →</button>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Canvas 3D -->
+        <div class="bloch-canvas-container" id="bloch-canvas-wrapper">
+            <div class="bloch-loading" id="bloch-loading">
+                <div class="loading-spinner"></div>
+                <span>Cargando esfera 3D...</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .bloch-module {
+        background: #ffffff;
+        border-radius: 12px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+        border: 1px solid rgba(0,0,0,0.05);
+        overflow: hidden;
+        margin-top: 2rem;
+    }
+
+    .bloch-header {
+        background: #FAFAFA;
+        padding: 1.5rem 2rem;
+        border-bottom: 1px solid rgba(0,0,0,0.05);
+    }
+    .bloch-header h3 {
+        margin: 0 0 0.5rem 0;
+        color: var(--primary-blue);
+        font-size: 1.4rem;
+    }
+    .bloch-header p {
+        margin: 0;
+        color: var(--koala-grey);
+        font-size: 0.95rem;
+    }
+
+    .bloch-container {
+        display: flex;
+        flex-direction: row;
+        height: 620px;
+    }
+
+    @media (max-width: 900px) {
+        .bloch-container {
+            flex-direction: column;
+            height: auto;
+        }
+        .bloch-canvas-container {
+            height: 420px !important;
+        }
+    }
+
+    .bloch-controls {
+        flex: 1;
+        padding: 1.5rem;
+        border-right: 1px solid rgba(0,0,0,0.05);
+        overflow-y: auto;
+        min-width: 240px;
+    }
+
+    .bloch-canvas-container {
+        flex: 2.5;
+        background: radial-gradient(ellipse at center, #151b28 0%, #0a0e17 100%);
+        position: relative;
+        min-height: 420px;
+    }
+
+    /* Qubit Selector */
+    .qubit-selector h4 {
+        margin: 0 0 0.6rem 0;
+        font-size: 0.95rem;
+        color: var(--text-main);
+    }
+    .qubit-tabs {
+        display: flex;
+        gap: 0.4rem;
+        flex-wrap: wrap;
+    }
+    .qubit-tab {
+        padding: 0.4rem 0.9rem;
+        border: 2px solid rgba(37, 150, 190, 0.25);
+        border-radius: 8px;
+        background: transparent;
+        color: var(--primary-blue);
+        font-weight: 700;
+        font-size: 0.85rem;
+        cursor: pointer;
+        transition: all 0.25s;
+        font-family: 'Inter', sans-serif;
+    }
+    .qubit-tab:hover {
+        background: rgba(37, 150, 190, 0.08);
+        border-color: var(--primary-blue);
+    }
+    .qubit-tab.active {
+        background: var(--primary-blue);
+        color: #fff;
+        border-color: var(--primary-blue);
+        box-shadow: 0 2px 8px rgba(37, 150, 190, 0.35);
+    }
+
+    /* Gate Info */
+    .gate-info {
+        display: flex;
+        align-items: center;
+        gap: 0.7rem;
+        padding: 0.6rem 0.8rem;
+        background: rgba(233, 56, 176, 0.06);
+        border: 1px solid rgba(233, 56, 176, 0.15);
+        border-radius: 8px;
+        margin-bottom: 1rem;
+        animation: fadeSlideIn 0.3s ease;
+    }
+    @keyframes fadeSlideIn {
+        from { opacity: 0; transform: translateY(-6px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    .gate-badge {
+        width: 32px;
+        height: 32px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: var(--accent-pink);
+        color: #fff;
+        font-weight: 800;
+        font-size: 0.85rem;
+        border-radius: 6px;
+        flex-shrink: 0;
+    }
+    .gate-desc {
+        font-size: 0.8rem;
+        color: var(--text-main);
+        line-height: 1.35;
+    }
+
+    .bloch-info h4, .history-controls h4 {
+        margin: 0 0 0.5rem 0;
+        color: var(--text-main);
+        font-size: 0.95rem;
+    }
+
+    .btn-bloch {
+        padding: 0.6rem 0.8rem;
+        border-radius: 6px;
+        font-weight: 600;
+        cursor: pointer;
+        border: none;
+        transition: all 0.2s;
+        width: 100%;
+        font-family: 'Inter', sans-serif;
+        font-size: 0.82rem;
+    }
+    .btn-outline {
+        background: transparent;
+        border: 1px solid var(--primary-blue);
+        color: var(--primary-blue);
+    }
+    .btn-outline:hover:not(:disabled) {
+        background: rgba(37, 150, 190, 0.1);
+    }
+    .btn-outline:disabled {
+        border-color: #ccc;
+        color: #ccc;
+        cursor: not-allowed;
+    }
+
+    .state-presets {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 0.45rem;
+        font-size: 0.85rem;
+        color: var(--text-main);
+    }
+    .preset-btn {
+        background: rgba(0,0,0,0.04);
+        border: 1px solid rgba(0,0,0,0.08);
+        padding: 0.35rem 0.7rem;
+        border-radius: 6px;
+        cursor: pointer;
+        font-weight: 700;
+        color: var(--primary-blue);
+        transition: all 0.2s;
+        font-family: 'Inter', sans-serif;
+        font-size: 0.82rem;
+    }
+    .preset-btn:hover {
+        background: rgba(37, 150, 190, 0.12);
+        border-color: var(--primary-blue);
+        transform: translateY(-1px);
+    }
+
+    .divider {
+        border: 0;
+        height: 1px;
+        background: rgba(0,0,0,0.06);
+        margin: 1.2rem 0;
+    }
+
+    .bloch-stats {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0.6rem;
+        font-size: 0.88rem;
+        color: var(--text-main);
+    }
+    .stat-item strong {
+        color: var(--primary-blue);
+    }
+
+    .history-btns {
+        display: flex;
+        gap: 0.8rem;
+    }
+
+    .bloch-loading {
+        position: absolute;
+        top: 0; left: 0; right: 0; bottom: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 1rem;
+        color: rgba(255,255,255,0.5);
+        font-size: 0.9rem;
+        z-index: 10;
+    }
+    .loading-spinner {
+        width: 36px;
+        height: 36px;
+        border: 3px solid rgba(255,255,255,0.1);
+        border-top-color: var(--primary-blue);
+        border-radius: 50%;
+        animation: spin 0.7s linear infinite;
+    }
+    @keyframes spin {
+        to { transform: rotate(360deg); }
+    }
+</style>
+
+<script>
+// ============================================================
+// BLOCH SPHERE — Per-Qubit 3D Visualization with Gate Animations
+// ============================================================
+(function() {
+    // --- DOM REFS ---
+    const statX = document.getElementById('stat-x');
+    const statY = document.getElementById('stat-y');
+    const statZ = document.getElementById('stat-z');
+    const statTheta = document.getElementById('stat-theta');
+    const statPhi = document.getElementById('stat-phi');
+    const btnPrev = document.getElementById('btn-prev-state');
+    const btnNext = document.getElementById('btn-next-state');
+    const container = document.getElementById('bloch-canvas-wrapper');
+    const loadingEl = document.getElementById('bloch-loading');
+    const qubitTabsContainer = document.getElementById('qubit-tabs');
+    const gateInfoEl = document.getElementById('gate-info');
+    const gateBadgeEl = document.getElementById('gate-badge');
+    const gateDescEl = document.getElementById('gate-desc');
+
+    if (!container) return;
+
+    // --- CONSTANTS ---
+    const SPHERE_RADIUS = 2.2;
+    const ANIM_FRAMES = 60;  // ~1s at 60fps
+
+    // --- PER-QUBIT STATE ---
+    let numQubits = 2;
+    let selectedQubit = 0;
+    // qubitStates[q] = { current: {x,y,z}, previous: {x,y,z} }
+    let qubitStates = {};
+    let lastGateInfo = null;     // { type, qubit }
+    let fullStatevector = null;  // raw SV array from backend
+
+    function initQubitState(q) {
+        if (!qubitStates[q]) {
+            qubitStates[q] = {
+                current: { x: 0, y: 0, z: 1 },
+                previous: { x: 0, y: 0, z: 1 }
+            };
+        }
+    }
+
+    // --- THREE.JS ---
+    let THREE_LIB = null;
+    let scene, camera, renderer, controls;
+    let arrowHelper, tipSphere, trailLine;
+    let currentArrowDir = null;
+    let animFrame = null;
+
+    // Glow / atmosphere meshes
+    let glowMesh, innerGlowMesh;
+    // Trail points for gate animation paths
+    let trailPoints = [];
+
+    // ============================================================
+    // COMPLEX NUMBER PARSER
+    // ============================================================
+    function parseComplex(s) {
+        if (typeof s !== 'string') return { r: 0, i: 0 };
+        s = s.replace(/[\(\)\s]/g, '');
+        let r = 0, i = 0;
+
+        // Pure imaginary
+        if (s.includes('j') && !s.includes('+', 1) && !s.includes('-', 1)) {
+            let val = s.replace('j', '');
+            if (val === '' || val === '+') i = 1;
+            else if (val === '-') i = -1;
+            else i = parseFloat(val);
+            return { r, i };
+        }
+        let opIndex = Math.max(s.lastIndexOf('+'), s.lastIndexOf('-'));
+        if (opIndex > 0) {
+            let rStr = s.substring(0, opIndex);
+            let iStr = s.substring(opIndex).replace('j', '');
+            r = parseFloat(rStr);
+            if (iStr === '+' || iStr === '') i = 1;
+            else if (iStr === '-') i = -1;
+            else i = parseFloat(iStr);
+        } else {
+            r = parseFloat(s);
+        }
+        return { r: isNaN(r) ? 0 : r, i: isNaN(i) ? 0 : i };
+    }
+
+    // ============================================================
+    // PER-QUBIT BLOCH VECTOR FROM PROBABILITIES
+    // ============================================================
+    // Given a probabilities dict like {"00": 0.5, "11": 0.5},
+    // compute the Bloch vector for qubit q.
+    // From probabilities alone, we can only determine the Z component
+    // (P(|0⟩) - P(|1⟩)) and x=0, y=0 (no phase info).
+    function blochFromProbabilities(probabilities, qubitIndex, nQubits) {
+        let p0 = 0; // P(qubit_q = |0⟩)
+        let p1 = 0; // P(qubit_q = |1⟩)
+
+        for (const [state, prob] of Object.entries(probabilities)) {
+            // The backend already reverses bit strings ([::-1]),
+            // so qubit 0 is at string position 0, qubit 1 at position 1, etc.
+            const bitVal = state[qubitIndex];
+
+            if (bitVal === '0') {
+                p0 += prob;
+            } else {
+                p1 += prob;
+            }
+        }
+
+        // Normalize in case probabilities don't sum to exactly 1
+        const total = p0 + p1;
+        if (total > 0) {
+            p0 /= total;
+            p1 /= total;
+        }
+
+        // From probabilities only: Bloch vector lies on the Z axis
+        // z = P(|0⟩) - P(|1⟩), ranging from +1 (pure |0⟩) to -1 (pure |1⟩)
+        const z = p0 - p1;
+
+        // For a pure state, |ψ⟩ = cos(θ/2)|0⟩ + e^(iφ)sin(θ/2)|1⟩
+        // If we have amplitudes, we could extract x,y from the phase.
+        // Without phase info, the best representation is on the Z axis.
+        return { x: 0, y: 0, z: z };
+    }
+
+    // Attempt to compute from full statevector if available (has phase info)
+    function blochFromStatevector(svArray, qubitIndex, nQubits) {
+        if (!svArray || svArray.length < 2) return null;
+        const dim = 1 << nQubits;
+        if (svArray.length < dim) return null;
+
+        const amps = [];
+        for (let k = 0; k < dim; k++) {
+            amps.push(parseComplex(String(svArray[k])));
+        }
+
+        // Reduced density matrix for qubit q (2x2)
+        const rho = [[{r:0,i:0},{r:0,i:0}],[{r:0,i:0},{r:0,i:0}]];
+        const qBitMask = 1 << qubitIndex;
+
+        for (let a = 0; a < 2; a++) {
+            for (let b = 0; b < 2; b++) {
+                let sumR = 0, sumI = 0;
+                for (let k = 0; k < dim; k++) {
+                    const qValK = (k & qBitMask) ? 1 : 0;
+                    if (qValK !== a) continue;
+                    let m = b === 1 ? (k | qBitMask) : (k & ~qBitMask);
+                    const psiK = amps[k], psiM = amps[m];
+                    sumR += psiK.r * psiM.r + psiK.i * psiM.i;
+                    sumI += psiK.i * psiM.r - psiK.r * psiM.i;
+                }
+                rho[a][b] = { r: sumR, i: sumI };
+            }
+        }
+
+        return {
+            x: 2 * rho[0][1].r,
+            y: 2 * rho[0][1].i,
+            z: rho[0][0].r - rho[1][1].r
+        };
+    }
+
+    // ============================================================
+    // UPDATE UI STATS
+    // ============================================================
+    function updateStats(bloch) {
+        const theta = Math.acos(Math.max(-1, Math.min(1, bloch.z)));
+        const phi = Math.atan2(bloch.y, bloch.x);
+        if (statX) statX.innerText = bloch.x.toFixed(3);
+        if (statY) statY.innerText = bloch.y.toFixed(3);
+        if (statZ) statZ.innerText = bloch.z.toFixed(3);
+        if (statTheta) statTheta.innerText = theta.toFixed(3);
+        if (statPhi) statPhi.innerText = phi.toFixed(3);
+    }
+
+    // ============================================================
+    // QUBIT TABS
+    // ============================================================
+    function rebuildQubitTabs(n) {
+        numQubits = n;
+        qubitTabsContainer.innerHTML = '';
+        for (let q = 0; q < n; q++) {
+            initQubitState(q);
+            const btn = document.createElement('button');
+            btn.className = 'qubit-tab' + (q === selectedQubit ? ' active' : '');
+            btn.dataset.qubit = q;
+            btn.innerText = `Q${q}`;
+            btn.addEventListener('click', () => selectQubit(q));
+            qubitTabsContainer.appendChild(btn);
+        }
+    }
+
+    function selectQubit(q) {
+        selectedQubit = q;
+        qubitTabsContainer.querySelectorAll('.qubit-tab').forEach(t => {
+            t.classList.toggle('active', parseInt(t.dataset.qubit) === q);
+        });
+        const qs = qubitStates[q];
+        if (qs) {
+            updateStats(qs.current);
+            if (arrowHelper && THREE_LIB) {
+                animateVectorTo(qs.current, 'slerp');
+            }
+        }
+    }
+
+    // ============================================================
+    // GATE ANIMATION DESCRIPTIONS
+    // ============================================================
+    const gateDescriptions = {
+        'X':  'NOT — Rotación π alrededor del eje X',
+        'Y':  'Pauli-Y — Rotación π alrededor del eje Y',
+        'Z':  'Pauli-Z — Rotación π alrededor del eje Z',
+        'H':  'Hadamard — Rotación π alrededor de (X+Z)/√2',
+        'S':  'Fase S — Rotación π/2 alrededor del eje Z',
+        'T':  'Fase T — Rotación π/4 alrededor del eje Z',
+        'CX': 'CNOT — X controlada sobre el qubit objetivo',
+        'SWAP': 'Intercambio de qubits',
+    };
+
+    const gateColors = {
+        'H': '#2596be', 'X': '#73fd3d', 'Y': '#73fd3d', 'Z': '#73fd3d',
+        'S': '#f99b0f', 'T': '#f99b0f', 'CX': '#e938b0', 'SWAP': '#e938b0'
+    };
+
+    function showGateInfo(gateType) {
+        if (!gateInfoEl) return;
+        gateInfoEl.style.display = 'flex';
+        if (gateBadgeEl) {
+            gateBadgeEl.innerText = gateType;
+            gateBadgeEl.style.backgroundColor = gateColors[gateType] || '#e938b0';
+        }
+        if (gateDescEl) gateDescEl.innerText = gateDescriptions[gateType] || `Compuerta ${gateType}`;
+        setTimeout(() => {
+            if (gateInfoEl) gateInfoEl.style.display = 'none';
+        }, 3000);
+    }
+
+    // ============================================================
+    // PUBLIC API — Called from QuantumResults
+    // Signature: (probabilities, svArray, gateInfo, nQubits)
+    // ============================================================
+    window.updateBlochFromSimulation = function(probabilities, svArray, gateInfo, nQubits) {
+        if (!probabilities || typeof probabilities !== 'object') return;
+
+        const n = nQubits || 1;
+        if (n !== numQubits) {
+            if (selectedQubit >= n) selectedQubit = 0;
+            rebuildQubitTabs(n);
+        }
+
+        fullStatevector = svArray;
+        lastGateInfo = gateInfo || null;
+
+        // Determine if we have a usable full statevector (2^n complex amplitudes)
+        const dim = 1 << n;
+        const hasSV = svArray && svArray.length >= dim;
+
+        // Compute Bloch vector for EACH qubit
+        for (let q = 0; q < n; q++) {
+            initQubitState(q);
+            let bloch;
+
+            if (hasSV) {
+                // Full statevector available → use partial trace (has phase info)
+                bloch = blochFromStatevector(svArray, q, n);
+            }
+
+            if (!bloch) {
+                // Fallback: compute from probabilities (Z-axis only, no phase)
+                bloch = blochFromProbabilities(probabilities, q, n);
+            }
+
+            if (!bloch) continue;
+            qubitStates[q].previous = { ...qubitStates[q].current };
+            qubitStates[q].current = bloch;
+        }
+
+        // Update display for the selected qubit
+        const qs = qubitStates[selectedQubit];
+        if (qs) {
+            updateStats(qs.current);
+            if (btnPrev) btnPrev.disabled = false;
+            if (btnNext) btnNext.disabled = true;
+
+            if (arrowHelper && THREE_LIB) {
+                let animType = 'slerp';
+                if (gateInfo && gateInfo.type) {
+                    const gateTargetsThis = gateInfo.qubit === selectedQubit ||
+                                            gateInfo.qubit === undefined;
+                    if (gateTargetsThis) {
+                        showGateInfo(gateInfo.type);
+                        animType = getAnimType(gateInfo.type);
+                    }
+                }
+                animateVectorTo(qs.current, animType, qs.previous);
+            }
+        }
+    };
+
+    function getAnimType(gateType) {
+        switch (gateType) {
+            case 'X': return 'flip-x';
+            case 'Y': return 'flip-y';
+            case 'Z': return 'flip-z';
+            case 'H': return 'hadamard';
+            case 'S': case 'T': return 'rotate-z';
+            default: return 'slerp';
+        }
+    }
+
+    // ============================================================
+    // THREE.JS INITIALIZATION
+    // ============================================================
+    function init3D(THREE) {
+        THREE_LIB = THREE;
+        const width = container.clientWidth;
+        const height = container.clientHeight;
+
+        // Scene
+        scene = new THREE.Scene();
+        scene.background = new THREE.Color('#0a0e17');
+        scene.fog = new THREE.FogExp2('#0a0e17', 0.02);
+
+        // Camera
+        camera = new THREE.PerspectiveCamera(42, width / height, 0.1, 100);
+        camera.position.set(4.5, 3.5, 5.5);
+
+        // Renderer
+        renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(width, height);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        container.appendChild(renderer.domElement);
+
+        // Controls
+        controls = new THREE.OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.08;
+        controls.minDistance = 4;
+        controls.maxDistance = 14;
+
+        // =========================
+        // SPHERE — Enhanced visibility
+        // =========================
+        // Main solid sphere (semi-transparent, glassy)
+        const sphereGeo = new THREE.SphereGeometry(SPHERE_RADIUS, 64, 64);
+        const sphereMat = new THREE.MeshPhongMaterial({
+            color: 0x1a2844,
+            transparent: true,
+            opacity: 0.18,
+            shininess: 80,
+            specular: 0x4488cc,
+            side: THREE.FrontSide,
+            depthWrite: false
+        });
+        scene.add(new THREE.Mesh(sphereGeo, sphereMat));
+
+        // Wireframe overlay (subtle grid)
+        const wireGeo = new THREE.SphereGeometry(SPHERE_RADIUS + 0.005, 24, 24);
+        const wireMat = new THREE.MeshBasicMaterial({
+            color: 0x3399cc,
+            wireframe: true,
+            transparent: true,
+            opacity: 0.06
+        });
+        scene.add(new THREE.Mesh(wireGeo, wireMat));
+
+        // Outer glow shell
+        const glowGeo = new THREE.SphereGeometry(SPHERE_RADIUS * 1.08, 48, 48);
+        const glowMat = new THREE.MeshBasicMaterial({
+            color: 0x2596be,
+            transparent: true,
+            opacity: 0.04,
+            side: THREE.BackSide
+        });
+        glowMesh = new THREE.Mesh(glowGeo, glowMat);
+        scene.add(glowMesh);
+
+        // Inner subtle glow
+        const innerGlowGeo = new THREE.SphereGeometry(SPHERE_RADIUS * 0.98, 48, 48);
+        const innerGlowMat = new THREE.MeshBasicMaterial({
+            color: 0x6644aa,
+            transparent: true,
+            opacity: 0.03,
+            side: THREE.BackSide
+        });
+        innerGlowMesh = new THREE.Mesh(innerGlowGeo, innerGlowMat);
+        scene.add(innerGlowMesh);
+
+        // =========================
+        // GREAT CIRCLES (Equator + Meridians)
+        // =========================
+        function createGreatCircle(color, opacity, rotationFn) {
+            const pts = [];
+            const segments = 128;
+            for (let j = 0; j <= segments; j++) {
+                const angle = (j / segments) * Math.PI * 2;
+                pts.push(new THREE.Vector3(
+                    SPHERE_RADIUS * Math.cos(angle),
+                    0,
+                    SPHERE_RADIUS * Math.sin(angle)
+                ));
+            }
+            const geo = new THREE.BufferGeometry().setFromPoints(pts);
+            const mat = new THREE.LineBasicMaterial({ color, transparent: true, opacity });
+            const line = new THREE.Line(geo, mat);
+            if (rotationFn) rotationFn(line);
+            scene.add(line);
+            return line;
+        }
+
+        // Equator (XY plane in Bloch → XZ plane in Three, since Bloch Z maps to Three Y)
+        createGreatCircle(0x2596be, 0.35, null); // Already in XZ plane
+
+        // Meridian XZ (Bloch XZ → Three XY)
+        createGreatCircle(0x8844bb, 0.18, l => { l.rotation.x = Math.PI / 2; });
+
+        // Meridian YZ (Bloch YZ → Three YZ)
+        createGreatCircle(0x44bb44, 0.12, l => { l.rotation.z = Math.PI / 2; });
+
+        // =========================
+        // AXES
+        // =========================
+        const axisLen = SPHERE_RADIUS * 1.35;
+
+        function createAxis(color, start, end) {
+            const mat = new THREE.LineBasicMaterial({ color, linewidth: 1 });
+            const geo = new THREE.BufferGeometry().setFromPoints([start, end]);
+            scene.add(new THREE.Line(geo, mat));
+        }
+
+        function createLabel(text, pos, color, scale) {
+            const canvas = document.createElement('canvas');
+            const sz = 128;
+            canvas.width = sz; canvas.height = sz / 2;
+            const ctx = canvas.getContext('2d');
+            ctx.font = 'bold 40px monospace';
+            ctx.fillStyle = color;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(text, sz / 2, sz / 4);
+            const tex = new THREE.CanvasTexture(canvas);
+            const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, transparent: true, opacity: 0.9 }));
+            sp.position.copy(pos);
+            sp.scale.set(scale || 1.0, (scale || 1.0) * 0.5, 1);
+            scene.add(sp);
+        }
+
+        // X axis (Bloch X → Three X) Red
+        createAxis(0xff5555, new THREE.Vector3(-axisLen, 0, 0), new THREE.Vector3(axisLen, 0, 0));
+        createLabel('X', new THREE.Vector3(axisLen + 0.4, 0, 0), '#ff6666', 0.8);
+        createLabel('-X', new THREE.Vector3(-axisLen - 0.5, 0, 0), '#ff6666', 0.7);
+
+        // Z axis (Bloch Z → Three Y) Blue
+        createAxis(0x5588ff, new THREE.Vector3(0, -axisLen, 0), new THREE.Vector3(0, axisLen, 0));
+        createLabel('|0⟩', new THREE.Vector3(0, axisLen + 0.5, 0), '#88aaff', 1.0);
+        createLabel('|1⟩', new THREE.Vector3(0, -axisLen - 0.5, 0), '#88aaff', 1.0);
+
+        // Y axis (Bloch Y → Three Z) Green
+        createAxis(0x55ff55, new THREE.Vector3(0, 0, -axisLen), new THREE.Vector3(0, 0, axisLen));
+        createLabel('Y', new THREE.Vector3(0, 0, axisLen + 0.4), '#66ff66', 0.8);
+        createLabel('-Y', new THREE.Vector3(0, 0, -axisLen - 0.5), '#66ff66', 0.7);
+
+        // =========================
+        // STATE VECTOR ARROW
+        // =========================
+        const initDir = new THREE.Vector3(0, 1, 0).normalize();
+        arrowHelper = new THREE.ArrowHelper(
+            initDir, new THREE.Vector3(0, 0, 0),
+            SPHERE_RADIUS, 0xe938b0, 0.3, 0.16
+        );
+        // Make the arrow shaft thicker/more visible
+        arrowHelper.line.material.linewidth = 2;
+        scene.add(arrowHelper);
+        currentArrowDir = initDir.clone();
+
+        // Tip sphere (glowing)
+        const tipGeo = new THREE.SphereGeometry(0.12, 20, 20);
+        const tipMat = new THREE.MeshBasicMaterial({ color: 0xff55cc });
+        tipSphere = new THREE.Mesh(tipGeo, tipMat);
+        tipSphere.position.copy(initDir.clone().multiplyScalar(SPHERE_RADIUS));
+        scene.add(tipSphere);
+
+        // Tip glow
+        const tipGlowGeo = new THREE.SphereGeometry(0.22, 16, 16);
+        const tipGlowMat = new THREE.MeshBasicMaterial({
+            color: 0xe938b0, transparent: true, opacity: 0.25
+        });
+        const tipGlow = new THREE.Mesh(tipGlowGeo, tipGlowMat);
+        tipSphere.add(tipGlow);
+
+        // Trail line (for showing animation path)
+        const trailGeo = new THREE.BufferGeometry();
+        const trailMat = new THREE.LineBasicMaterial({
+            color: 0xe938b0,
+            transparent: true,
+            opacity: 0.5
+        });
+        trailLine = new THREE.Line(trailGeo, trailMat);
+        scene.add(trailLine);
+
+        // =========================
+        // LIGHTING
+        // =========================
+        scene.add(new THREE.AmbientLight(0xffffff, 0.35));
+
+        const dirLight = new THREE.DirectionalLight(0xffffff, 0.5);
+        dirLight.position.set(5, 8, 5);
+        scene.add(dirLight);
+
+        const pointLight1 = new THREE.PointLight(0x2596be, 0.4, 25);
+        pointLight1.position.set(-4, 4, -4);
+        scene.add(pointLight1);
+
+        const pointLight2 = new THREE.PointLight(0x8E44AD, 0.2, 20);
+        pointLight2.position.set(4, -2, 3);
+        scene.add(pointLight2);
+
+        // Origin dot
+        const originGeo = new THREE.SphereGeometry(0.05, 12, 12);
+        scene.add(new THREE.Mesh(originGeo, new THREE.MeshBasicMaterial({ color: 0xffffff })));
+
+        // Hide loading
+        if (loadingEl) loadingEl.style.display = 'none';
+
+        // Resize
+        window.addEventListener('resize', onWindowResize);
+
+        // Render loop
+        let time = 0;
+        function renderLoop() {
+            requestAnimationFrame(renderLoop);
+            time += 0.01;
+            controls.update();
+
+            // Subtle glow pulse
+            if (glowMesh) {
+                glowMesh.material.opacity = 0.03 + 0.015 * Math.sin(time * 2);
+            }
+
+            renderer.render(scene, camera);
+        }
+        renderLoop();
+    }
+
+    function onWindowResize() {
+        if (!camera || !renderer || !container) return;
+        const w = container.clientWidth, h = container.clientHeight;
+        camera.aspect = w / h;
+        camera.updateProjectionMatrix();
+        renderer.setSize(w, h);
+    }
+
+    // ============================================================
+    // EASING FUNCTIONS
+    // ============================================================
+    function easeInOutCubic(t) {
+        return t < 0.5 ? 4*t*t*t : 1 - Math.pow(-2*t + 2, 3) / 2;
+    }
+    function easeInOutSine(t) {
+        return -(Math.cos(Math.PI * t) - 1) / 2;
+    }
+    function easeOutBack(t) {
+        const c1 = 1.70158, c3 = c1 + 1;
+        return 1 + c3 * Math.pow(t - 1, 3) + c1 * Math.pow(t - 1, 2);
+    }
+
+    // ============================================================
+    // BLOCH ↔ THREE.JS COORDINATE MAPPING
+    // Three(X, Y, Z) = Bloch(x, z, y)
+    // ============================================================
+    function blochToThree(b) {
+        return new THREE_LIB.Vector3(b.x, b.z, b.y);
+    }
+
+    // Safe normalization — returns fallback direction if vector is zero/degenerate
+    function safeNormalize(v, fallback) {
+        const len = v.length();
+        if (len < 0.0001) {
+            return fallback ? fallback.clone() : new THREE_LIB.Vector3(0, 1, 0);
+        }
+        return v.clone().divideScalar(len);
+    }
+
+    // ============================================================
+    // ANIMATION ENGINE — Robust, handles all edge cases
+    // ============================================================
+    function animateVectorTo(targetBloch, animType, fromBloch) {
+        if (animFrame) cancelAnimationFrame(animFrame);
+        if (!THREE_LIB || !arrowHelper) return;
+
+        // Convert Bloch coords to Three.js coords
+        const targetThree = blochToThree(targetBloch);
+        const targetLen = targetThree.length();
+        const targetDir = safeNormalize(targetThree);
+
+        // Start from current arrow position
+        const startDir = currentArrowDir ? currentArrowDir.clone() : new THREE_LIB.Vector3(0, 1, 0);
+        const startLen = currentArrowLen !== undefined ? currentArrowLen : 1.0;
+
+        // Target length: full radius if on sphere surface, shorter if near origin
+        const endLen = Math.max(0.08, targetLen);
+
+        // Clear trail
+        trailPoints = [];
+        updateTrail();
+
+        let progress = 0;
+        const totalFrames = animType === 'slerp' ? 45 : ANIM_FRAMES;
+
+        function step() {
+            progress++;
+            const t = progress / totalFrames;
+            const eased = easeInOutCubic(t);
+
+            let newPos; // Position in Three.js space (NOT necessarily unit vector)
+
+            switch (animType) {
+                case 'flip-x':
+                    newPos = animateFlip(startDir, startLen, targetDir, endLen, t, new THREE_LIB.Vector3(1, 0, 0));
+                    break;
+                case 'flip-y':
+                    newPos = animateFlip(startDir, startLen, targetDir, endLen, t, new THREE_LIB.Vector3(0, 0, 1));
+                    break;
+                case 'flip-z':
+                    newPos = animateFlip(startDir, startLen, targetDir, endLen, t, new THREE_LIB.Vector3(0, 1, 0));
+                    break;
+                case 'hadamard':
+                    newPos = animateHadamard(startDir, startLen, targetDir, endLen, t);
+                    break;
+                case 'rotate-z':
+                    newPos = animateRotateAxis(startDir, startLen, targetDir, endLen, t, new THREE_LIB.Vector3(0, 1, 0));
+                    break;
+                default: // slerp — simple linear interpolation of position
+                    newPos = lerpPosition(startDir, startLen, targetDir, endLen, eased);
+                    break;
+            }
+
+            applyArrowPosition(newPos);
+
+            // Record trail
+            trailPoints.push(newPos.clone().multiplyScalar(SPHERE_RADIUS / Math.max(0.01, newPos.length())).clone());
+            if (trailPoints.length > 2) updateTrail();
+
+            if (progress < totalFrames) {
+                animFrame = requestAnimationFrame(step);
+            } else {
+                // Snap to final position
+                applyArrowPosition(targetDir.clone().multiplyScalar(endLen));
+                animFrame = null;
+                setTimeout(fadeTrail, 500);
+            }
+        }
+        step();
+    }
+
+    // --- LERP POSITION (default smooth transition) ---
+    function lerpPosition(startDir, startLen, endDir, endLen, t) {
+        // Interpolate on the sphere surface using angle interpolation
+        const startPos = startDir.clone().multiplyScalar(startLen);
+        const endPos = endDir.clone().multiplyScalar(endLen);
+
+        // Simple vector lerp works well for small-to-medium angle differences
+        const pos = new THREE_LIB.Vector3().lerpVectors(startPos, endPos, t);
+
+        // Project back onto sphere at interpolated radius
+        const len = pos.length();
+        if (len < 0.001) {
+            // Edge case: passing through origin, use direct direction
+            return endDir.clone().multiplyScalar(endLen * t);
+        }
+
+        const interpLen = startLen + (endLen - startLen) * t;
+        return pos.normalize().multiplyScalar(interpLen);
+    }
+
+    // --- FLIP (X, Y, Z gates) — Compress then expand with rotation ---
+    function animateFlip(startDir, startLen, targetDir, endLen, t, axis) {
+        if (t < 0.35) {
+            // Phase 1: Compress toward origin + begin rotation
+            const t1 = t / 0.35;
+            const ease = easeInOutSine(t1);
+            const angle = Math.PI * ease * 0.2;
+            const q = new THREE_LIB.Quaternion().setFromAxisAngle(axis, angle);
+            const dir = startDir.clone().applyQuaternion(q);
+            const scale = startLen * (1.0 - 0.85 * ease); // Shrink to 15%
+            return dir.multiplyScalar(scale);
+        } else {
+            // Phase 2: Rotate + expand to target
+            const t2 = (t - 0.35) / 0.65;
+            const ease = easeOutBack(Math.min(t2, 1.0));
+            const angle = Math.PI * (0.2 + 0.8 * easeInOutCubic(t2));
+            const q = new THREE_LIB.Quaternion().setFromAxisAngle(axis, angle);
+            const dir = startDir.clone().applyQuaternion(q);
+            const scale = startLen * 0.15 + (endLen - startLen * 0.15) * ease;
+            return dir.multiplyScalar(Math.max(0.05, scale));
+        }
+    }
+
+    // --- HADAMARD — Rotation around (X+Z)/√2 axis ---
+    function animateHadamard(startDir, startLen, targetDir, endLen, t) {
+        const axis = new THREE_LIB.Vector3(1, 1, 0).normalize();
+        const ease = easeInOutCubic(t);
+        const angle = Math.PI * ease;
+        const q = new THREE_LIB.Quaternion().setFromAxisAngle(axis, angle);
+        const dir = startDir.clone().applyQuaternion(q);
+        const scale = startLen + (endLen - startLen) * ease;
+        return dir.multiplyScalar(Math.max(0.05, scale));
+    }
+
+    // --- ROTATE AROUND AXIS (S, T gates) ---
+    function animateRotateAxis(startDir, startLen, targetDir, endLen, t, axis) {
+        const ease = easeInOutCubic(t);
+        // Compute angle between projections onto plane perpendicular to axis
+        const startFlat = startDir.clone().sub(axis.clone().multiplyScalar(startDir.dot(axis)));
+        const targetFlat = targetDir.clone().sub(axis.clone().multiplyScalar(targetDir.dot(axis)));
+        let angle = 0;
+        if (startFlat.length() > 0.001 && targetFlat.length() > 0.001) {
+            angle = startFlat.angleTo(targetFlat);
+            const cross = new THREE_LIB.Vector3().crossVectors(startFlat, targetFlat);
+            if (cross.dot(axis) < 0) angle = -angle;
+        }
+        if (Math.abs(angle) < 0.01) angle = Math.PI / 2;
+
+        const q = new THREE_LIB.Quaternion().setFromAxisAngle(axis, angle * ease);
+        const dir = startDir.clone().applyQuaternion(q);
+        const scale = startLen + (endLen - startLen) * ease;
+        return dir.multiplyScalar(Math.max(0.05, scale));
+    }
+
+    // --- APPLY ARROW POSITION (direction + length) ---
+    let currentArrowLen = 1.0;
+
+    function applyArrowPosition(pos) {
+        if (!arrowHelper || !THREE_LIB) return;
+
+        const len = pos.length();
+        const dir = safeNormalize(pos);
+        const arrowLen = Math.max(0.1, SPHERE_RADIUS * Math.min(len, 1.0));
+
+        try {
+            arrowHelper.setDirection(dir);
+            arrowHelper.setLength(arrowLen, Math.min(0.3, arrowLen * 0.14), 0.14);
+        } catch(e) {
+            // ArrowHelper.setDirection can fail for degenerate directions
+        }
+
+        currentArrowDir = dir.clone();
+        currentArrowLen = len;
+
+        if (tipSphere) {
+            tipSphere.position.copy(dir.clone().multiplyScalar(arrowLen));
+        }
+    }
+
+    // --- TRAIL ---
+    function updateTrail() {
+        if (!trailLine || !THREE_LIB || trailPoints.length < 2) return;
+        const geo = new THREE_LIB.BufferGeometry().setFromPoints(trailPoints);
+        trailLine.geometry.dispose();
+        trailLine.geometry = geo;
+        trailLine.material.opacity = 0.5;
+    }
+
+    function fadeTrail() {
+        if (!trailLine) return;
+        let op = 0.5;
+        function f() {
+            op -= 0.02;
+            if (op <= 0) {
+                trailLine.material.opacity = 0;
+                trailPoints = [];
+                return;
+            }
+            trailLine.material.opacity = op;
+            requestAnimationFrame(f);
+        }
+        f();
+    }
+
+    // ============================================================
+    // PRESET STATES
+    // ============================================================
+    const presetStates = {
+        '0':  { x: 0, y: 0, z: 1 },
+        '1':  { x: 0, y: 0, z: -1 },
+        '+':  { x: 1, y: 0, z: 0 },
+        '-':  { x: -1, y: 0, z: 0 },
+        'i':  { x: 0, y: 1, z: 0 },
+        '-i': { x: 0, y: -1, z: 0 },
+    };
+
+    function setBlochState(bloch) {
+        initQubitState(selectedQubit);
+        qubitStates[selectedQubit].previous = { ...qubitStates[selectedQubit].current };
+        qubitStates[selectedQubit].current = bloch;
+        updateStats(bloch);
+        if (btnPrev) btnPrev.disabled = false;
+        if (btnNext) btnNext.disabled = true;
+        if (arrowHelper && THREE_LIB) animateVectorTo(bloch, 'slerp');
+    }
+
+    // ============================================================
+    // EVENT LISTENERS
+    // ============================================================
+    if (btnPrev) {
+        btnPrev.addEventListener('click', () => {
+            const qs = qubitStates[selectedQubit];
+            if (!qs) return;
+            animateVectorTo(qs.previous, 'slerp');
+            updateStats(qs.previous);
+            btnPrev.disabled = true;
+            btnNext.disabled = false;
+        });
+    }
+
+    if (btnNext) {
+        btnNext.addEventListener('click', () => {
+            const qs = qubitStates[selectedQubit];
+            if (!qs) return;
+            animateVectorTo(qs.current, 'slerp');
+            updateStats(qs.current);
+            btnPrev.disabled = false;
+            btnNext.disabled = true;
+        });
+    }
+
+    document.querySelectorAll('.preset-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const key = btn.getAttribute('data-state');
+            if (presetStates[key]) setBlochState(presetStates[key]);
+        });
+    });
+
+    // Listen for qubit count changes from CircuitGrid
+    const qubitsInput = document.getElementById('num_qubits');
+    if (qubitsInput) {
+        const updateTabs = () => {
+            const n = parseInt(qubitsInput.value) || 2;
+            if (n !== numQubits) {
+                if (selectedQubit >= n) selectedQubit = 0;
+                rebuildQubitTabs(n);
+            }
+        };
+        qubitsInput.addEventListener('change', updateTabs);
+        qubitsInput.addEventListener('input', updateTabs);
+    }
+
+    // ============================================================
+    // LOAD THREE.JS AND INIT
+    // ============================================================
+    function loadScript(src) {
+        return new Promise((resolve, reject) => {
+            const existing = document.querySelector(`script[src="${src}"]`);
+            if (existing) {
+                if (existing.dataset.loaded === 'true') { resolve(); return; }
+                existing.addEventListener('load', () => resolve());
+                existing.addEventListener('error', () => reject(new Error(`Failed: ${src}`)));
+                return;
+            }
+            const s = document.createElement('script');
+            s.src = src;
+            s.onload = () => { s.dataset.loaded = 'true'; resolve(); };
+            s.onerror = () => reject(new Error(`Failed: ${src}`));
+            document.head.appendChild(s);
+        });
+    }
+
+    async function bootstrap() {
+        try {
+            await loadScript('https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js');
+            await loadScript('https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js');
+            if (typeof THREE === 'undefined') {
+                if (loadingEl) loadingEl.innerHTML = '<span style="color:#ff4444;">Error: Three.js no disponible</span>';
+                return;
+            }
+            if (!container.querySelector('canvas')) {
+                init3D(THREE);
+                rebuildQubitTabs(numQubits);
+            }
+        } catch (err) {
+            console.error('BlochSphere: Error loading dependencies:', err);
+            if (loadingEl) loadingEl.innerHTML = '<span style="color:#ff4444;">Error cargando dependencias 3D</span>';
+        }
+    }
+
+    bootstrap();
+})();
+</script>
