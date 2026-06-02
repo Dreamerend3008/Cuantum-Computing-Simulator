@@ -1,0 +1,533 @@
+---
+---
+
+<div class="circuit-builder">
+    <div class="toolbox" id="toolbox">
+        <h3 class="toolbox-title">Compuertas</h3>
+        <div class="gate-palette">
+            <!-- 1 Qubit Gates -->
+            <div class="gate draggable" draggable="true" data-type="H" style="--gate-color: var(--primary-blue);">H</div>
+            <div class="gate draggable" draggable="true" data-type="X" style="--gate-color: var(--accent-green);">X</div>
+            <div class="gate draggable" draggable="true" data-type="Y" style="--gate-color: var(--accent-green);">Y</div>
+            <div class="gate draggable" draggable="true" data-type="Z" style="--gate-color: var(--accent-green);">Z</div>
+            <div class="gate draggable" draggable="true" data-type="S" style="--gate-color: var(--accent-orange);">S</div>
+            <div class="gate draggable" draggable="true" data-type="T" style="--gate-color: var(--accent-orange);">T</div>
+            
+            <!-- 2 Qubit Gates -->
+            <div class="gate draggable gate-2q" draggable="true" data-type="CX" style="--gate-color: var(--accent-pink);">CX</div>
+            <div class="gate draggable gate-2q" draggable="true" data-type="SWAP" style="--gate-color: var(--accent-pink);">SWAP</div>
+            
+            <!-- Operations -->
+            <div class="gate draggable" draggable="true" data-type="Measure" style="--gate-color: var(--koala-grey);">M</div>
+        </div>
+        <div id="builder-status" class="builder-status">
+            Arrastra una compuerta hacia la grilla temporal.
+        </div>
+    </div>
+
+    <div class="grid-scroll-container">
+        <div id="circuit-grid" class="circuit-grid">
+            <!-- Grid generated via JS -->
+        </div>
+    </div>
+</div>
+
+<style>
+    .circuit-builder {
+        display: flex;
+        flex-direction: column;
+        gap: 1.5rem;
+        width: 100%;
+    }
+
+    .toolbox {
+        background: #FAFAFA;
+        border: 1px solid rgba(0,0,0,0.05);
+        border-radius: 8px;
+        padding: 1rem;
+    }
+
+    .toolbox-title {
+        font-size: 0.9rem;
+        color: var(--koala-grey);
+        margin: 0 0 0.75rem 0;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+
+    .gate-palette {
+        display: flex;
+        gap: 0.75rem;
+        flex-wrap: wrap;
+    }
+
+    .gate {
+        width: 40px;
+        height: 40px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: var(--gate-color, var(--primary-blue));
+        color: white;
+        font-weight: bold;
+        border-radius: 6px;
+        cursor: grab;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        user-select: none;
+        font-size: 0.9rem;
+        transition: transform 0.1s;
+    }
+    
+    .gate:active {
+        cursor: grabbing;
+        transform: scale(0.95);
+    }
+
+    .gate-2q {
+        border-bottom: 3px solid rgba(0,0,0,0.3); /* Indicator for 2 qubits */
+    }
+
+    .builder-status {
+        margin-top: 1rem;
+        font-size: 0.85rem;
+        color: var(--accent-orange);
+        font-weight: 600;
+        min-height: 1.2rem;
+    }
+
+    .grid-scroll-container {
+        overflow-x: auto;
+        padding-bottom: 1rem;
+        background: #ffffff;
+        border: 1px solid rgba(0,0,0,0.05);
+        border-radius: 8px;
+        min-height: 250px;
+        position: relative;
+    }
+
+    .circuit-grid {
+        display: inline-grid; /* Columns will be added dynamically */
+        gap: 1px;
+        background: rgba(0,0,0,0.05);
+        padding: 1rem;
+    }
+
+    /* Grid layout structure */
+    :global(.grid-row-label) {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: #FAFAFA;
+        font-weight: bold;
+        color: var(--text-main);
+        padding: 0 1rem;
+        height: 50px;
+        border-radius: 4px;
+        margin-right: 0.5rem;
+    }
+
+    :global(.grid-cell) {
+        width: 50px;
+        height: 50px;
+        background: #ffffff;
+        position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    /* Horizontal wire line */
+    :global(.grid-cell::before) {
+        content: '';
+        position: absolute;
+        top: 50%;
+        left: 0;
+        right: 0;
+        height: 2px;
+        background: var(--koala-grey);
+        z-index: 0;
+        transform: translateY(-50%);
+    }
+
+    :global(.grid-cell.drag-over) {
+        background: rgba(37, 150, 190, 0.1); /* primary-blue light */
+    }
+
+    :global(.grid-cell.clickable-control) {
+        background: rgba(249, 155, 15, 0.2); /* accent-orange light */
+        cursor: crosshair;
+    }
+    :global(.grid-cell.clickable-control:hover) {
+        background: rgba(249, 155, 15, 0.4);
+    }
+
+    :global(.placed-gate) {
+        position: relative;
+        z-index: 10;
+        width: 36px;
+        height: 36px;
+        background: var(--primary-blue);
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 6px;
+        font-weight: bold;
+        font-size: 0.85rem;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        cursor: pointer;
+    }
+
+    :global(.placed-gate.cx-control) {
+        width: 14px;
+        height: 14px;
+        border-radius: 50%;
+        background: var(--accent-pink);
+    }
+
+    :global(.placed-gate.cx-target) {
+        background: var(--accent-pink);
+        border-radius: 50%;
+    }
+
+    /* Vertical line for multi-qubit gates */
+    :global(.vertical-connection) {
+        position: absolute;
+        left: 50%;
+        width: 2px;
+        background: var(--accent-pink);
+        z-index: 5;
+        transform: translateX(-50%);
+    }
+
+    /* Delete button on hover */
+    :global(.placed-gate:hover::after) {
+        content: '✕';
+        position: absolute;
+        top: -8px;
+        right: -8px;
+        background: red;
+        color: white;
+        width: 16px;
+        height: 16px;
+        font-size: 10px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    :global(.placed-gate.cx-control:hover::after) {
+        display: none; /* Only delete from target */
+    }
+</style>
+
+<script>
+    // --- STATE ---
+    window.circuitData = {
+        qubits: 2,
+        gates: [] // { type, target, control?, time }
+    };
+
+    let maxTimeSteps = 10;
+    
+    // UI Interaction state
+    let draggedGateType = null;
+    let pendingTwoClickGate = null; // { type, target, time }
+
+    // Colors mapping (same as CSS vars roughly)
+    const gateColors = {
+        'H': '#2596be', 'X': '#73fd3d', 'Y': '#73fd3d', 'Z': '#73fd3d',
+        'S': '#f99b0f', 'T': '#f99b0f', 'Measure': '#808e8f',
+        'CX': '#e938b0', 'SWAP': '#e938b0'
+    };
+
+    // DOM Elements
+    const gridEl = document.getElementById('circuit-grid');
+    const statusEl = document.getElementById('builder-status');
+    const draggables = document.querySelectorAll('.draggable');
+
+    // --- INITIALIZATION ---
+    function init() {
+        // Expose function for simulador.astro to update num_qubits dynamically
+        window.setCircuitQubits = (num) => {
+            window.circuitData.qubits = num;
+            // Remove gates that are now out of bounds
+            window.circuitData.gates = window.circuitData.gates.filter(g => 
+                g.target < num && (g.control === undefined || g.control < num)
+            );
+            renderGrid();
+        };
+
+        // Expose function to get legacy JSON for backend
+        window.getLegacyInstructions = () => {
+            // Sort by time
+            const sortedGates = [...window.circuitData.gates].sort((a, b) => a.time - b.time);
+            return sortedGates.map(g => {
+                let qubits = [];
+                if (g.control !== undefined) {
+                    qubits = [g.control, g.target];
+                } else {
+                    qubits = [g.target];
+                }
+                return {
+                    name: g.type,
+                    qubits: qubits
+                };
+            });
+        };
+
+        // Setup drag events for toolbox
+        draggables.forEach(el => {
+            el.addEventListener('dragstart', (e) => {
+                if (pendingTwoClickGate) cancelTwoClick(); // Cancel any pending action
+                draggedGateType = e.target.getAttribute('data-type');
+                e.dataTransfer.setData('text/plain', draggedGateType);
+                e.dataTransfer.effectAllowed = 'copy';
+            });
+            el.addEventListener('dragend', () => {
+                draggedGateType = null;
+            });
+        });
+
+        // Click on toolbox instead of drag (Optional feature, but let's stick to drag for now)
+
+        renderGrid();
+    }
+
+    // --- RENDER ---
+    function renderGrid() {
+        gridEl.innerHTML = '';
+        const numQubits = window.circuitData.qubits;
+        
+        // Ensure maxTimeSteps fits all gates + some empty space
+        const maxGateTime = window.circuitData.gates.reduce((max, g) => Math.max(max, g.time), -1);
+        maxTimeSteps = Math.max(10, maxGateTime + 3);
+
+        // Setup CSS Grid: Label column + time columns
+        gridEl.style.gridTemplateColumns = `auto repeat(${maxTimeSteps}, 50px)`;
+        gridEl.style.gridTemplateRows = `repeat(${numQubits}, 50px)`;
+
+        // Draw Labels and Cells
+        for (let q = 0; q < numQubits; q++) {
+            // Label
+            const label = document.createElement('div');
+            label.className = 'grid-row-label';
+            label.innerText = `q${q}`;
+            label.style.gridColumn = '1';
+            label.style.gridRow = `${q + 1}`;
+            gridEl.appendChild(label);
+
+            // Cells for this qubit
+            for (let t = 0; t < maxTimeSteps; t++) {
+                const cell = document.createElement('div');
+                cell.className = 'grid-cell';
+                cell.style.gridColumn = `${t + 2}`;
+                cell.style.gridRow = `${q + 1}`;
+                cell.dataset.q = q;
+                cell.dataset.t = t;
+
+                // Drag & Drop Listeners
+                cell.addEventListener('dragover', handleDragOver);
+                cell.addEventListener('dragleave', handleDragLeave);
+                cell.addEventListener('drop', handleDrop);
+                cell.addEventListener('click', handleCellClick);
+
+                // Highlight if waiting for control
+                if (pendingTwoClickGate && pendingTwoClickGate.time == t && pendingTwoClickGate.target != q) {
+                    // Check if cell is empty
+                    if (!isCellOccupied(q, t)) {
+                        cell.classList.add('clickable-control');
+                    }
+                }
+
+                gridEl.appendChild(cell);
+            }
+        }
+
+        // Draw Gates and Connections
+        window.circuitData.gates.forEach((gate, idx) => {
+            drawGate(gate, idx);
+        });
+    }
+
+    function drawGate(gate, idx) {
+        const targetQ = gate.target;
+        const t = gate.time;
+
+        const cell = getCellEl(targetQ, t);
+        if (!cell) return;
+
+        const gateEl = document.createElement('div');
+        gateEl.className = 'placed-gate';
+        
+        // Colors
+        if (gate.type === 'CX' || gate.type === 'SWAP') {
+            gateEl.classList.add('cx-target');
+            if (gate.type === 'CX') {
+                gateEl.innerText = '⊕';
+            } else {
+                gateEl.innerText = '×';
+            }
+        } else {
+            gateEl.innerText = gate.type;
+            gateEl.style.backgroundColor = gateColors[gate.type] || 'var(--primary-blue)';
+        }
+
+        gateEl.addEventListener('click', (e) => {
+            e.stopPropagation();
+            removeGate(idx);
+        });
+
+        cell.appendChild(gateEl);
+
+        // Draw control and connection if multi-qubit
+        if (gate.control !== undefined) {
+            const controlQ = gate.control;
+            const cCell = getCellEl(controlQ, t);
+            
+            if (cCell) {
+                const cGateEl = document.createElement('div');
+                cGateEl.className = 'placed-gate';
+                if (gate.type === 'CX') {
+                    cGateEl.classList.add('cx-control');
+                } else if (gate.type === 'SWAP') {
+                    cGateEl.classList.add('cx-target');
+                    cGateEl.innerText = '×';
+                }
+                
+                // Allow removing from control click too (or not, just visual)
+                cGateEl.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    removeGate(idx);
+                });
+                
+                cCell.appendChild(cGateEl);
+
+                // Draw vertical line
+                const minQ = Math.min(targetQ, controlQ);
+                const maxQ = Math.max(targetQ, controlQ);
+                const distance = maxQ - minQ;
+                
+                // We append the line to the top cell so it reaches down
+                const topCell = getCellEl(minQ, t);
+                const line = document.createElement('div');
+                line.className = 'vertical-connection';
+                line.style.top = '25px'; // start at center
+                line.style.height = `${distance * 50}px`; // 50px per row
+                topCell.appendChild(line);
+            }
+        }
+    }
+
+    // --- DRAG & DROP LOGIC ---
+
+    function isCellOccupied(q, t) {
+        return window.circuitData.gates.some(g => 
+            (g.time == t) && (g.target == q || g.control == q)
+        );
+    }
+
+    function isColumnOccupied(t) {
+        // Sometimes gates like CX occupy the column but leave other cells free?
+        // IBM usually allows multiple single qubit gates in same time step if qubits differ.
+        // We only check cell occupation.
+        return false;
+    }
+
+    function handleDragOver(e) {
+        e.preventDefault();
+        const q = parseInt(e.currentTarget.dataset.q);
+        const t = parseInt(e.currentTarget.dataset.t);
+
+        if (!isCellOccupied(q, t) && !pendingTwoClickGate) {
+            e.currentTarget.classList.add('drag-over');
+        }
+    }
+
+    function handleDragLeave(e) {
+        e.currentTarget.classList.remove('drag-over');
+    }
+
+    function handleDrop(e) {
+        e.preventDefault();
+        e.currentTarget.classList.remove('drag-over');
+
+        if (pendingTwoClickGate) return;
+
+        const type = e.dataTransfer.getData('text/plain') || draggedGateType;
+        if (!type) return;
+
+        const q = parseInt(e.currentTarget.dataset.q);
+        const t = parseInt(e.currentTarget.dataset.t);
+
+        if (isCellOccupied(q, t)) return;
+
+        if (type === 'CX' || type === 'SWAP') {
+            // Initiate 2-click phase
+            pendingTwoClickGate = { type, target: q, time: t };
+            statusEl.innerText = `Has colocado ${type}. Ahora haz CLIC en otro qubit en la misma columna de tiempo para establecer el Control.`;
+            statusEl.style.color = "var(--accent-pink)";
+            renderGrid(); // This will highlight clickable control cells
+        } else {
+            // Single qubit gate
+            window.circuitData.gates.push({ type, target: q, time: t });
+            renderGrid();
+        }
+    }
+
+    function handleCellClick(e) {
+        if (!pendingTwoClickGate) return;
+
+        const q = parseInt(e.currentTarget.dataset.q);
+        const t = parseInt(e.currentTarget.dataset.t);
+
+        // Must be in same time step, different qubit, and empty
+        if (t === pendingTwoClickGate.time && q !== pendingTwoClickGate.target) {
+            if (!isCellOccupied(q, t)) {
+                // Complete the 2-qubit gate
+                window.circuitData.gates.push({
+                    type: pendingTwoClickGate.type,
+                    target: pendingTwoClickGate.target,
+                    control: q,
+                    time: t
+                });
+                pendingTwoClickGate = null;
+                statusEl.innerText = "Arrastra una compuerta hacia la grilla temporal.";
+                statusEl.style.color = "var(--accent-orange)";
+                renderGrid();
+            } else {
+                statusEl.innerText = "Esa celda está ocupada. Elige otra celda de la misma columna, o haz clic en cualquier otro lado para cancelar.";
+            }
+        } else {
+            // Clicked somewhere else, cancel
+            cancelTwoClick();
+        }
+    }
+
+    function cancelTwoClick() {
+        if (pendingTwoClickGate) {
+            pendingTwoClickGate = null;
+            statusEl.innerText = "Operación cancelada. Arrastra una compuerta hacia la grilla temporal.";
+            statusEl.style.color = "var(--koala-grey)";
+            renderGrid();
+        }
+    }
+
+    // Cancel on escape key or clicking outside grid
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') cancelTwoClick();
+    });
+
+    function removeGate(idx) {
+        window.circuitData.gates.splice(idx, 1);
+        renderGrid();
+    }
+
+    function getCellEl(q, t) {
+        return gridEl.querySelector(`.grid-cell[data-q="${q}"][data-t="${t}"]`);
+    }
+
+    // Run initialization
+    document.addEventListener('DOMContentLoaded', init);
+
+</script>

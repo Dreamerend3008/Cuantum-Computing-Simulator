@@ -1,0 +1,407 @@
+---
+---
+
+<div class="quantum-results-module">
+    <!-- Estado Inicial / Vacío -->
+    <div id="results-empty" class="results-empty">
+        <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="empty-icon"><circle cx="12" cy="12" r="10"></circle><path d="M12 16v-4"></path><path d="M12 8h.01"></path></svg>
+        <p>Configura tu circuito y presiona "Ejecutar Simulación" para ver los resultados analíticos aquí.</p>
+    </div>
+
+    <!-- Resultados Visibles -->
+    <div id="results-display" class="results-display" style="display: none;">
+        
+        <!-- Tarjeta: Estado Dominante -->
+        <div class="dominant-state-card">
+            <div class="dominant-label">ESTADO MÁS PROBABLE</div>
+            <div class="dominant-value" id="dominant-state-text">|00⟩</div>
+            <div class="dominant-prob" id="dominant-prob-text">0.0%</div>
+        </div>
+
+        <!-- Histograma Chart.js -->
+        <div class="chart-container">
+            <h4 class="chart-title">Histograma de Probabilidades</h4>
+            <div class="canvas-wrapper">
+                <canvas id="probability-chart"></canvas>
+            </div>
+        </div>
+
+        <!-- Tabla Detallada -->
+        <div class="table-container" id="amplitudes-container">
+            <h4 class="chart-title">Análisis de Amplitudes</h4>
+            <div class="table-wrapper">
+                <table class="amplitudes-table">
+                    <thead>
+                        <tr>
+                            <th>Estado</th>
+                            <th>Parte Real</th>
+                            <th>Parte Imag.</th>
+                            <th>Magnitud</th>
+                            <th>Probabilidad</th>
+                        </tr>
+                    </thead>
+                    <tbody id="amplitudes-tbody">
+                        <!-- Llenado dinámicamente -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<style>
+    .quantum-results-module {
+        width: 100%;
+        font-family: 'Inter', sans-serif;
+    }
+
+    .results-empty {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        padding: 4rem 2rem;
+        background: #1A1A1D;
+        border-radius: 12px;
+        color: var(--koala-grey);
+        box-shadow: inset 0 2px 10px rgba(0,0,0,0.5);
+    }
+    .empty-icon {
+        margin-bottom: 1rem;
+        color: var(--primary-blue);
+        opacity: 0.5;
+    }
+
+    .results-display {
+        display: flex;
+        flex-direction: column;
+        gap: 1.5rem;
+    }
+
+    /* Estado Dominante Hero */
+    .dominant-state-card {
+        background: linear-gradient(135deg, var(--accent-purple) 0%, var(--accent-pink) 100%);
+        border-radius: 12px;
+        padding: 1.5rem;
+        color: white;
+        text-align: center;
+        box-shadow: 0 8px 25px rgba(233, 56, 176, 0.3);
+        position: relative;
+        overflow: hidden;
+    }
+    .dominant-state-card::after {
+        content: '';
+        position: absolute;
+        top: 0; right: 0; bottom: 0; left: 0;
+        background: url('data:image/svg+xml;utf8,<svg width="20" height="20" xmlns="http://www.w3.org/2000/svg"><circle cx="2" cy="2" r="1" fill="white" fill-opacity="0.1"/></svg>');
+        pointer-events: none;
+    }
+    .dominant-label {
+        font-size: 0.8rem;
+        font-weight: 700;
+        letter-spacing: 0.1em;
+        opacity: 0.8;
+        margin-bottom: 0.5rem;
+    }
+    .dominant-value {
+        font-size: 3rem;
+        font-family: 'Quicksand', sans-serif;
+        font-weight: 800;
+        line-height: 1.1;
+        text-shadow: 0 4px 10px rgba(0,0,0,0.2);
+    }
+    .dominant-prob {
+        font-size: 1.2rem;
+        font-weight: 600;
+        margin-top: 0.25rem;
+        color: var(--accent-yellow);
+    }
+
+    /* Gráfico */
+    .chart-container, .table-container {
+        background: #ffffff;
+        border: 1px solid rgba(0,0,0,0.05);
+        border-radius: 12px;
+        padding: 1.25rem;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.02);
+    }
+    .chart-title {
+        margin: 0 0 1rem 0;
+        color: var(--primary-blue);
+        font-size: 1.1rem;
+        border-bottom: 2px solid rgba(37, 150, 190, 0.1);
+        padding-bottom: 0.5rem;
+    }
+    .canvas-wrapper {
+        position: relative;
+        height: 250px;
+        width: 100%;
+    }
+
+    /* Tabla */
+    .table-wrapper {
+        overflow-x: auto;
+    }
+    .amplitudes-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.85rem;
+        table-layout: fixed;
+    }
+    .amplitudes-table th, .amplitudes-table td {
+        padding: 0.75rem;
+        text-align: left;
+        border-bottom: 1px solid rgba(0,0,0,0.05);
+    }
+    .amplitudes-table th {
+        color: var(--text-main);
+        font-weight: 700;
+        background: #FAFAFA;
+    }
+    .amplitudes-table td:first-child {
+        font-family: monospace;
+        font-weight: 600;
+        color: var(--accent-purple);
+    }
+    .amplitudes-table tr:hover {
+        background: rgba(37, 150, 190, 0.03);
+    }
+</style>
+
+<!-- Importar Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+    let quantumChart = null;
+
+    // Helper: Parsear string complejo de Python (ej: "0.7071+0.0j", "(0.5-0.5j)", "1j")
+    // Fallback simple si no viene statevector o viene en un formato no esperado
+    function parseComplex(complexStr) {
+        if (typeof complexStr !== 'string') return { r: 0, i: 0 };
+        // Eliminar paréntesis y espacios
+        let s = complexStr.replace(/[()\s]/g, '');
+        
+        // Manejo básico de signos y 'j'
+        let r = 0, i = 0;
+        
+        // Es un caso simple de solo imaginario ej. '1j', '-1j'
+        if (s.includes('j') && !s.includes('+', 1) && !s.includes('-', 1)) {
+            let val = s.replace('j', '');
+            if (val === '' || val === '+') i = 1;
+            else if (val === '-') i = -1;
+            else i = parseFloat(val);
+            return { r, i };
+        }
+
+        // Caso normal "A+Bj" o "A-Bj"
+        // Buscamos el operador del medio, ignorando el primer caracter por si es negativo
+        let opIndex = Math.max(s.lastIndexOf('+'), s.lastIndexOf('-'));
+        if (opIndex > 0) {
+            let rStr = s.substring(0, opIndex);
+            let iStr = s.substring(opIndex).replace('j', '');
+            
+            r = parseFloat(rStr);
+            if (iStr === '+' || iStr === '') i = 1;
+            else if (iStr === '-') i = -1;
+            else i = parseFloat(iStr);
+        } else {
+            // Solo real
+            r = parseFloat(s);
+        }
+
+        return { r: isNaN(r) ? 0 : r, i: isNaN(i) ? 0 : i };
+    }
+
+    // Exponer la función de renderizado globalmente
+    window.renderQuantumResults = function(data) {
+        const emptyState = document.getElementById('results-empty');
+        const displayState = document.getElementById('results-display');
+        
+        emptyState.style.display = 'none';
+        displayState.style.display = 'flex';
+
+        const probabilities = data.probabilities || {};
+        
+        // 1. Calcular el estado dominante
+        let maxProb = -1;
+        let dominantState = "";
+        
+        const labels = [];
+        const dataPoints = [];
+        const bgColors = [];
+        const borderColors = [];
+
+        for (const [state, prob] of Object.entries(probabilities)) {
+            labels.push(`|${state}⟩`);
+            dataPoints.push(prob * 100); // Guardar como porcentaje (0-100)
+            
+            if (prob > maxProb) {
+                maxProb = prob;
+                dominantState = state;
+            }
+        }
+
+        // Actualizar UI del Dominante
+        document.getElementById('dominant-state-text').innerText = `|${dominantState}⟩`;
+        document.getElementById('dominant-prob-text').innerText = `${(maxProb * 100).toFixed(2)}%`;
+
+        // 2. Dibujar el Histograma con Chart.js
+        const canvas = document.getElementById('probability-chart');
+        
+        // Asignar colores (rosa para el dominante, azul para el resto)
+        labels.forEach(label => {
+            if (label === `|${dominantState}⟩`) {
+                bgColors.push('rgba(233, 56, 176, 0.8)'); // accent-pink
+                borderColors.push('rgba(233, 56, 176, 1)');
+            } else {
+                bgColors.push('rgba(37, 150, 190, 0.6)'); // primary-blue
+                borderColors.push('rgba(37, 150, 190, 1)');
+            }
+        });
+
+        if (quantumChart) {
+            quantumChart.destroy();
+        }
+
+        const ctx = canvas.getContext('2d');
+        quantumChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Probabilidad (%)',
+                    data: dataPoints,
+                    backgroundColor: bgColors,
+                    borderColor: borderColors,
+                    borderWidth: 1,
+                    borderRadius: 4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        max: 100,
+                        title: { display: true, text: 'Probabilidad (%)' }
+                    }
+                },
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return `Prob: ${context.parsed.y.toFixed(2)}%`;
+                            }
+                        }
+                    }
+                },
+                animation: {
+                    duration: 800,
+                    easing: 'easeOutQuart'
+                }
+            }
+        });
+
+        // 3. Poblar la Tabla Detallada
+        const tbody = document.getElementById('amplitudes-tbody');
+        tbody.innerHTML = '';
+        
+        // Si hay statevector (normalmente viene como dict o array en python pero asumimos
+        // que el backend lo formatea o podemos deducir de las probabilidades si solo hay shots)
+        // Para asegurar que la tabla siempre es útil, iteraremos sobre los labels.
+        
+        let hasStateVector = Array.isArray(data.statevector) || typeof data.statevector === 'object';
+        let svArray = [];
+        if (hasStateVector) {
+            // Convert to array if it's a dict mapped by binary strings
+            if (!Array.isArray(data.statevector)) {
+                // If it's an object mapping "00": "0.7j" etc.
+                Object.keys(probabilities).forEach(k => {
+                    svArray.push(data.statevector[k] || "0j");
+                });
+            } else {
+                svArray = data.statevector;
+            }
+        }
+
+        // --- CALCULAR FALLBACK PARA BLOCH SPHERE ---
+        let blochArray = svArray;
+        if (!hasStateVector || blochArray.length < 2) {
+            let p0 = 0, p1 = 0;
+            for (const [state, prob] of Object.entries(probabilities)) {
+                // Asumiendo que el qubit 0 es el último caracter del string
+                if (state.endsWith('0')) p0 += prob;
+                else p1 += prob;
+            }
+            blochArray = [Math.sqrt(p0).toString(), Math.sqrt(p1).toString()];
+        }
+
+        let index = 0;
+        for (const [state, prob] of Object.entries(probabilities)) {
+            const tr = document.createElement('tr');
+            
+            // Col 1: Estado
+            const tdState = document.createElement('td');
+            tdState.innerText = `|${state}⟩`;
+            tr.appendChild(tdState);
+
+            let real = 0, imag = 0, mag = 0;
+
+            if (hasStateVector && svArray[index] !== undefined) {
+                const comp = parseComplex(String(svArray[index]));
+                real = comp.r;
+                imag = comp.i;
+                mag = Math.sqrt(real*real + imag*imag);
+            } else {
+                // Modo Shot: Solo tenemos probabilidades aproximadas, inferimos magnitud = sqrt(prob)
+                // y asumimos que es real positivo (ya que no hay fases en conteos)
+                mag = Math.sqrt(prob);
+                real = mag;
+                imag = 0;
+            }
+
+            // Col 2: Real
+            const tdReal = document.createElement('td');
+            tdReal.innerText = real.toFixed(4);
+            tr.appendChild(tdReal);
+
+            // Col 3: Imag
+            const tdImag = document.createElement('td');
+            tdImag.innerText = imag.toFixed(4) + 'j';
+            tr.appendChild(tdImag);
+
+            // Col 4: Magnitud
+            const tdMag = document.createElement('td');
+            tdMag.innerText = mag.toFixed(4);
+            tr.appendChild(tdMag);
+
+            // Col 5: Prob
+            const tdProb = document.createElement('td');
+            tdProb.innerText = (prob * 100).toFixed(2) + '%';
+            // Resaltar la probabilidad del dominante
+            if (state === dominantState) {
+                tdProb.style.fontWeight = 'bold';
+                tdProb.style.color = 'var(--accent-pink)';
+            }
+            tr.appendChild(tdProb);
+
+            tbody.appendChild(tr);
+            index++;
+        }
+
+        // --- Integración con BlochSphere ---
+        // Pass probabilities dict directly so BlochSphere can compute per-qubit states
+        const sampleKey = Object.keys(probabilities)[0] || '';
+        const nQubits = sampleKey.length || 1;
+
+        if (window.updateBlochFromSimulation) {
+            const gateInfo = data._lastGateInfo || null;
+            // Pass: probabilities dict, statevector array (if available), gate info, num qubits
+            window.updateBlochFromSimulation(probabilities, blochArray, gateInfo, nQubits);
+        }
+    };
+</script>
