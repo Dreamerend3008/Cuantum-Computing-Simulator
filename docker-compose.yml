@@ -1,0 +1,28 @@
+version: '3.8'
+
+services:
+  backend:
+    build: 
+      context: ./backend
+    container_name: quantum-backend
+    ports:
+      - "8000:8000"
+    restart: unless-stopped
+
+    volumes:
+      - ./backend/data:/app/data
+    environment:
+      - PYTHONUNBUFFERED=1
+
+  frontend:
+    build: 
+      context: ./frontend
+      args:
+        - PUBLIC_API_BASE_URL=http://localhost:8000/api
+    container_name: quantum-frontend
+    # Mapping localhost:4321 to NGINX port 80 to match your CORS configuration in main.py
+    ports:
+      - "4321:80"
+    restart: unless-stopped
+    depends_on:
+      - backend

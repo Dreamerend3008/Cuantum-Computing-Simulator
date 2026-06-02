@@ -1,23 +1,9 @@
 from qiskit import QuantumCircuit
-
-def half_adder(qc: QuantumCircuit, q: list[int]):
-
-    qc.cx(q[0], q[2])
-    qc.cx(q[1], q[2])
-    qc.ccx(q[0], q[1], q[3])
-
-
-def full_adder(qc: QuantumCircuit, q: list[int]):
-    
-    # Paso 1: Primer Half Adder (Suma A y B)
-    half_adder(qc, [q[0], q[1], q[3], q[4]])
-    
-    # Paso 2: Segundo Half Adder (Suma la 'Suma Parcial' S1 y Cin)
-    half_adder(qc, [q[3], q[2], q[6], q[5]])
-    
-    # Paso 3: Acarreo Final (Cout = C1 XOR C2) Pero C1 y C2 no pueden ser 1 al mismo tiempo
-    qc.cx(q[4], q[7])
-    qc.cx(q[5], q[7])
+from .custom_circuits.half_adder import half_adder
+from .custom_circuits.full_adder import full_adder, old_full_adder
+from .custom_circuits.qft import qft, iqft
+from .custom_circuits.mod_exp import mod_exp
+from services.custom_gate_service import get_custom_gate
 
 GATE_MAP = {
     "H": lambda qc, q, p: qc.h(q[0]),
@@ -33,14 +19,31 @@ GATE_MAP = {
     "SWAP": lambda qc, q, p: qc.swap(q[0], q[1]),
     "CXX": lambda qc, q, p: qc.ccx(q[0], q[1], q[2]), # Toffoli gate
     "HALF_ADD": lambda qc, q, p: half_adder(qc, q),
-    "FULL_ADD": lambda qc, q, p: full_adder(qc, q)
+    "FULL_ADD": lambda qc, q, p: full_adder(qc, q),
+    "OLD_FULL_ADD": lambda qc, q, p: old_full_adder(qc, q),
+    "QFT": lambda qc, q, p: qft(qc, q),
+    "IQFT": lambda qc, q, p: iqft(qc, q),
+    "MOD_EXP": lambda qc, q, p: mod_exp(qc, q, p),
+    "INITIALIZE": lambda qc, q, p: qc.initialize(p, q)
 }
 
 def apply_gate(qc: QuantumCircuit, gate_name: str, qubits: list[int], params: list[float] = None):
     if params is None:
         params = []
     
-    if gate_name not in GATE_MAP:
-        raise ValueError(f"Gate {gate_name} not supported.")
-        
-    GATE_MAP[gate_name](qc, qubits, params)
+    if gate_name in GATE_MAP:
+        GATE_MAP[gate_name](qc, qubits, params)
+        return
+
+    custom_gate = get_custom_gate(gate_name)
+    if custom_gate:
+        if len(qubits) != custom_gate['num_qubits']:
+            raise ValueError(f"Gate {gate_name} requires {custom_gate['num_qubits']} qubits, but got {len(qubits)}")
+        for instr in custom_gate['instructions']:            
+            sub_name = instr.get('name')
+            mapped_qubits = [qubits[i] for i in instr.get('qubits', [])]
+            sub_params = instr.get('params', [])
+
+            apply_gate(qc, sub_name, mapped_qubits, sub_params)
+        return
+    raise ValueError(f"Unknown gate: {gate_name}")
