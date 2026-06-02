@@ -26,22 +26,6 @@ const { title, showNavAndFooter = true } = Astro.props;
 		
         <title>{title}</title>
 
-        <!-- Theme Toggle Script to prevent flashing -->
-        <script is:inline>
-            const theme = (() => {
-                if (typeof localStorage !== 'undefined' && localStorage.getItem('theme')) {
-                    return localStorage.getItem('theme');
-                }
-                if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
-                    return 'dark';
-                }
-                return 'light';
-            })();
-            if (theme === 'dark') {
-                document.documentElement.classList.add('dark');
-            }
-            window.localStorage.setItem('theme', theme);
-        </script>
 	</head>
 	<body>
         <div class="app-container">
@@ -56,32 +40,25 @@ const { title, showNavAndFooter = true } = Astro.props;
 
 <style is:global>
 	:root {
-		--bg-color: #F4F7F6;
+		/* Paleta de colores estandarizada */
+		--bg-color: #F0F1F1;
 		--text-main: #2C3E50;
-		--primary-blue: #007BFF;
-		--secondary-cyan: #00E5FF;
-		--koala-grey: #95A5A6;
+		--koala-grey: #808e8f;
+		--primary-blue: #2596be;
+		--accent-pink: #e938b0;
+		--accent-orange: #f99b0f;
+		--accent-yellow: #fdf715;
+		--accent-green: #73fd3d;
 		--accent-purple: #8E44AD;
-		--nav-footer-bg: var(--primary-blue);
-		--nav-footer-text: #FFFFFF;
-	}
-
-	:root.dark {
-		--bg-color: #1A1A1D;
-		--text-main: #ECF0F1;
-		--primary-blue: #4DABFF;
-		--secondary-cyan: #00FFFF;
-		--koala-grey: #BDC3C7;
-		--accent-purple: #BF5FFF;
-		--nav-footer-bg: var(--primary-blue);
-		--nav-footer-text: #1A1A1D; /* Oscuro para contraste con el azul claro en dark mode */
+		
+		--nav-footer-bg: #FFFFFF;
+		--nav-footer-text: #2C3E50;
 	}
 
 	html {
 		font-family: 'Inter', sans-serif;
 		background: var(--bg-color);
-        color: var(--text-main);
-        transition: background-color 0.3s ease, color 0.3s ease;
+		color: var(--text-main);
 	}
 
     body {

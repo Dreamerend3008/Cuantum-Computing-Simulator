@@ -1,190 +1,356 @@
 ---
 import Layout from '../layouts/Layout.astro';
+import CircuitGrid from '../components/simulator/CircuitGrid.astro';
+import QuantumResults from '../components/simulator/QuantumResults.astro';
+import BlochSphere from '../components/simulator/BlochSphere.astro';
 const apiBase = import.meta.env.PUBLIC_API_BASE_URL;
 ---
 
 <Layout title="Simulador">
-  <div class="simulator-container">
-    <h1>Simulador de Circuitos Cuánticos</h1>
+  <div class="simulator-wrapper">
+    <header class="sim-header">
+      <h1>Dashboard de Simulación Cuántica</h1>
+      <p>Configura tu circuito, agrega compuertas lógicas y ejecuta la simulación en tiempo real.</p>
+    </header>
 
-    <div class="form-group">
-      <label for="num_qubits">Número de qubits</label>
-      <input type="number" id="num_qubits" min="1" value="2" />
+    <div class="sim-grid-top">
+      <!-- PANEL IZQUIERDO: CONFIGURACIÓN -->
+      <aside class="panel config-panel">
+        <h2>Configuración</h2>
+        <div class="form-grid">
+            <div class="form-group">
+                <label for="num_qubits">Qubits</label>
+                <input type="number" id="num_qubits" min="1" value="2" />
+            </div>
+            <div class="form-group">
+                <label for="num_clbits">Clbits</label>
+                <input type="number" id="num_clbits" min="0" value="2" />
+            </div>
+            <div class="form-group full-width">
+                <label for="initial_state">Estado inicial</label>
+                <input type="text" id="initial_state" placeholder="ej: 00" value="00" />
+            </div>
+            <div class="form-group">
+                <label for="runner_mode">Modo</label>
+                <select id="runner_mode">
+                    <option value="shot">Shot</option>
+                    <option value="statevector">Statevector</option>
+                </select>
+            </div>
+            <div class="form-group" id="shots-group">
+                <label for="shots">Shots</label>
+                <input type="number" id="shots" min="1" value="1024" />
+            </div>
+            <div class="form-group full-width">
+                <label for="noise_model">Modelo de ruido</label>
+                <select id="noise_model">
+                    <option value="">Ninguno</option>
+                    <option value="depolarizing">Depolarizing</option>
+                    <option value="thermal_relaxation">Thermal Rel.</option>
+                </select>
+            </div>
+        </div>
+        
+        <div class="execute-section" style="margin-top: 2rem;">
+            <button id="run-btn" class="btn btn-primary btn-massive">Ejecutar Simulación</button>
+        </div>
+      </aside>
+
+      <!-- PANEL DERECHO: CIRCUITO -->
+      <main class="panel circuit-panel" style="padding: 0; background: transparent; box-shadow: none; border: none;">
+        <CircuitGrid />
+      </main>
     </div>
 
-    <div class="form-group">
-      <label for="initial_state">Estado inicial</label>
-      <input type="text" id="initial_state" placeholder="ej: 00" value="00" />
-    </div>
-
-    <div class="form-group">
-      <label for="runner_mode">Modo</label>
-      <select id="runner_mode">
-        <option value="shot">Shot</option>
-        <option value="statevector">Statevector</option>
-      </select>
-    </div>
-
-    <div class="form-group" id="shots-group">
-      <label for="shots">Shots</label>
-      <input type="number" id="shots" min="1" value="1024" />
-    </div>
-
-    <div class="form-group">
-      <label for="num_clbits">Número de clbits</label>
-      <input type="number" id="num_clbits" min="0" value="2" />
-    </div>
-
-    <div class="form-group">
-      <label for="noise_model">Modelo de ruido</label>
-      <select id="noise_model">
-        <option value="">Ninguno</option>
-        <option value="depolarizing">Depolarizing</option>
-        <option value="thermal_relaxation">Thermal Relaxation</option>
-      </select>
-    </div>
-
-    <div class="form-group">
-    <label>Instrucciones (puertas)</label>
-    <div id="instructions-list"></div>
-
-    <button id="add-gate">+ Agregar puerta</button>
-
-    <div id="gate-panel" style="display:none">
-        <select id="gate-select">
-        <option>H</option><option>X</option><option>Y</option>
-        <option>Z</option><option>S</option><option>T</option>
-        <option>RX</option><option>RY</option><option>RZ</option>
-        <option>CX</option><option>SWAP</option><option>CXX</option>
-        <option>HALF_ADD</option><option>FULL_ADD</option>
-        <option>OLD_FULL_ADD</option><option>QFT</option>
-        <option>IQFT</option><option>INITIALIZE</option>
-        </select>
-
-        <div id="qubit-inputs"></div>
-
-        <input type="number" id="param-value" placeholder="Parámetro (ej: 1.5708)" step="0.0001" style="display:none" />
-        <div id="param-input" style="display:none">
-        <label>Parámetro</label>
+    <!-- SECCIÓN INFERIOR: RESULTADOS -->
+    <div class="sim-bottom-section">
+        <div class="results-container panel">
+            <h2>Visualizador de Resultados</h2>
+            <QuantumResults />
         </div>
 
-        <button id="confirm-gate">✓ Agregar</button>
+        <BlochSphere />
     </div>
-    </div>
-
-    <button id="run-btn">Ejecutar simulación</button>
-
-    <div id="result"></div>
   </div>
 </Layout>
 
+<style>
+.simulator-wrapper {
+    max-width: 1200px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+}
+
+.sim-header h1 {
+    font-size: 2.2rem;
+    margin-bottom: 0.5rem;
+    color: var(--text-main);
+}
+.sim-header p {
+    color: var(--koala-grey);
+    font-size: 1.05rem;
+    margin: 0;
+}
+
+.sim-grid-top {
+    display: grid;
+    grid-template-columns: 320px 1fr;
+    gap: 1.5rem;
+    align-items: start;
+}
+
+.sim-bottom-section {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+    margin-top: 1rem;
+}
+
+@media (max-width: 1024px) {
+    .sim-grid-top {
+        grid-template-columns: 1fr;
+    }
+}
+
+.panel {
+    background: #ffffff;
+    border-radius: 12px;
+    padding: 1.5rem;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+    border: 1px solid rgba(0,0,0,0.05);
+}
+
+.panel h2 {
+    font-size: 1.25rem;
+    margin-top: 0;
+    margin-bottom: 1.5rem;
+    color: var(--primary-blue);
+    border-bottom: 2px solid rgba(37, 150, 190, 0.1);
+    padding-bottom: 0.5rem;
+}
+
+.form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+}
+.form-grid .full-width {
+    grid-column: 1 / -1;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+}
+.flex-grow {
+    flex: 1;
+}
+
+label {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text-main);
+}
+
+input, select {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 0.6rem 0.75rem;
+    border: 1px solid color-mix(in srgb, var(--koala-grey) 40%, transparent);
+    border-radius: 6px;
+    font-family: 'Inter', sans-serif;
+    font-size: 0.95rem;
+    color: var(--text-main);
+    background: #FAFAFA;
+    transition: all 0.2s ease;
+}
+
+input:focus, select:focus {
+    outline: none;
+    border-color: var(--primary-blue);
+    box-shadow: 0 0 0 3px rgba(37, 150, 190, 0.15);
+    background: #ffffff;
+}
+
+/* Central Panel */
+.panel-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+}
+.panel-header h2 {
+    margin: 0;
+    border: none;
+    padding: 0;
+}
+
+.btn {
+    padding: 0.6rem 1.2rem;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: 'Inter', sans-serif;
+    transition: all 0.2s ease;
+    border: none;
+    font-size: 0.95rem;
+}
+
+.btn-outline {
+    background: transparent;
+    color: var(--primary-blue);
+    border: 1px solid var(--primary-blue);
+}
+.btn-outline:hover {
+    background: rgba(37, 150, 190, 0.1);
+}
+
+.btn-secondary {
+    background: var(--primary-blue);
+    color: #fff;
+}
+.btn-secondary:hover {
+    background: #1e7a9b; /* Slightly darker */
+}
+
+.gate-form-panel {
+    background: var(--bg-color);
+    border-radius: 8px;
+    padding: 1.25rem;
+    margin-bottom: 1.5rem;
+    border: 1px dashed var(--koala-grey);
+}
+.gate-form-row {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 1rem;
+    align-items: flex-end;
+}
+.qubit-inputs-row {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+.qubit-inputs-row input {
+    width: 80px;
+}
+#confirm-gate {
+    margin-top: 1rem;
+    width: 100%;
+}
+
+.instructions-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    min-height: 200px;
+}
+
+.empty-state {
+    text-align: center;
+    padding: 3rem 1rem;
+    color: var(--koala-grey);
+    border: 2px dashed rgba(0,0,0,0.1);
+    border-radius: 8px;
+    font-size: 0.95rem;
+}
+
+/* Modificamos cómo se ven las instrucciones desde JS */
+:global(.instruction-item) {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: white;
+    padding: 0.75rem 1rem;
+    border-radius: 8px;
+    border-left: 4px solid var(--accent-purple);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+    font-family: 'Inter', sans-serif;
+    font-size: 0.95rem;
+    color: var(--text-main);
+    transition: transform 0.2s ease;
+}
+:global(.instruction-item:hover) {
+    transform: translateX(4px);
+}
+:global(.instruction-item button) {
+    background: transparent;
+    border: none;
+    color: var(--koala-grey);
+    cursor: pointer;
+    font-size: 1.2rem;
+    transition: color 0.2s;
+    padding: 0 0.5rem;
+}
+:global(.instruction-item button:hover) {
+    color: var(--accent-pink); /* Use the pink for destructive/remove */
+}
+:global(.instruction-gate-name) {
+    font-weight: 700;
+    color: var(--primary-blue);
+    margin-right: 0.5rem;
+}
+:global(.instruction-details) {
+    color: var(--koala-grey);
+    font-size: 0.85rem;
+}
+
+/* Right Panel */
+.btn-primary {
+    background: var(--accent-pink);
+    color: white;
+}
+.btn-massive {
+    width: 100%;
+    padding: 1rem;
+    font-size: 1.1rem;
+    box-shadow: 0 4px 15px rgba(233, 56, 176, 0.3);
+}
+.btn-massive:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(233, 56, 176, 0.4);
+}
+
+.results-container {
+    margin-top: 2rem;
+}
+.results-container h3 {
+    font-size: 1.1rem;
+    color: var(--text-main);
+    margin-bottom: 1rem;
+    border-bottom: 2px solid rgba(0,0,0,0.05);
+    padding-bottom: 0.5rem;
+}
+.console-output {
+    background: #1A1A1D; /* Dark terminal look */
+    color: var(--accent-green); /* Green text */
+    padding: 1rem;
+    border-radius: 8px;
+    font-family: monospace;
+    font-size: 0.85rem;
+    min-height: 150px;
+    max-height: 400px;
+    overflow-y: auto;
+    white-space: pre-wrap;
+    word-break: break-all;
+    box-shadow: inset 0 2px 10px rgba(0,0,0,0.5);
+    line-height: 1.5;
+}
+</style>
+
 <script define:vars={{ apiBase }}>
 
-  // ============================================================
-  // [IA] Lógica de puertas dinámicas
-  // ============================================================
-  const GATES = {
-    "H":            { qubits: 1, params: false },
-    "X":            { qubits: 1, params: false },
-    "Y":            { qubits: 1, params: false },
-    "Z":            { qubits: 1, params: false },
-    "S":            { qubits: 1, params: false },
-    "T":            { qubits: 1, params: false },
-    "RX":           { qubits: 1, params: true  },
-    "RY":           { qubits: 1, params: true  },
-    "RZ":           { qubits: 1, params: true  },
-    "CX":           { qubits: 2, params: false },
-    "SWAP":         { qubits: 2, params: false },
-    "CXX":          { qubits: 3, params: false },
-    "HALF_ADD":     { qubits: 4, params: false },
-    "FULL_ADD":     { qubits: 4, params: false },
-    "OLD_FULL_ADD": { qubits: 4, params: false },
-    "QFT":          { qubits: null, params: false },
-    "IQFT":         { qubits: null, params: false },
-    "INITIALIZE":   { qubits: null, params: true  },
-  }
-
-  let instructions = []
-
-  const addGateBtn       = document.getElementById("add-gate")
-  const gatePanel        = document.getElementById("gate-panel")
-  const gateSelect       = document.getElementById("gate-select")
-  const qubitInputs      = document.getElementById("qubit-inputs")
-  const paramInput       = document.getElementById("param-input")
-  const confirmGate      = document.getElementById("confirm-gate")
-  const instructionsList = document.getElementById("instructions-list")
-
-  addGateBtn.addEventListener('click', () => {
-    gatePanel.style.display = gatePanel.style.display === "none" ? "block" : "none"
-  })
-
-  gateSelect.addEventListener('change', () => {
-    const gate = GATES[gateSelect.value]
-
-    qubitInputs.innerHTML = ""
-    if (gate.qubits !== null) {
-      for (let i = 0; i < gate.qubits; i++) {
-        const input = document.createElement("input")
-        input.type = "number"
-        input.min = "1"
-        input.placeholder = `Qubit ${i + 1}`
-        input.className = "qubit-input"
-        qubitInputs.appendChild(input)
+  // Sincronizar qubits con la grilla
+  document.getElementById("num_qubits").addEventListener("change", (e) => {
+      const num = parseInt(e.target.value);
+      if (num > 0 && window.setCircuitQubits) {
+          window.setCircuitQubits(num);
       }
-    }
+  });
 
-    paramInput.style.display = gate.params ? "block" : "none"
-  })
-
-  gateSelect.dispatchEvent(new Event('change'))
-
-  confirmGate.addEventListener('click', () => {
-    const gateName = gateSelect.value
-    const gate = GATES[gateName]
-
-    let qubits = []
-    if (gate.qubits !== null) {
-      const inputs = qubitInputs.querySelectorAll(".qubit-input")
-      qubits = Array.from(inputs).map(inp => parseInt(inp.value))
-    }
-
-    const paramValue = document.getElementById("param-value")
-    let params = undefined
-    if (gate.params && paramValue.value !== "") {
-      params = [parseFloat(paramValue.value)]
-    }
-
-    const instruction = { name: gateName, qubits }
-    if (params !== undefined) instruction.params = params
-
-    instructions.push(instruction)
-    renderInstructions()
-    gatePanel.style.display = "none"
-  })
-
-  function renderInstructions() {
-    instructionsList.innerHTML = ""
-    instructions.forEach((inst, index) => {
-      const div = document.createElement("div")
-      div.className = "instruction-item"
-      div.innerHTML = `
-        <span>${inst.name} — qubits: [${inst.qubits.map(q => q + 1).join(", ")}]${inst.params ? " — params: " + inst.params : ""}</span>
-        <button onclick="removeInstruction(${index})">✕</button>
-      `
-      instructionsList.appendChild(div)
-    })
-  }
-
-  function removeInstruction(index) {
-    instructions.splice(index, 1)
-    renderInstructions()
-  }
-  // ============================================================
-  // [/IA]
-  // ============================================================
-
-
-  // Tu código original
   const button = document.getElementById("run-btn")
   button.addEventListener('click', async function() {
     const num_qubits    = document.getElementById("num_qubits").value
@@ -192,6 +358,9 @@ const apiBase = import.meta.env.PUBLIC_API_BASE_URL;
     const runner_mode   = document.getElementById("runner_mode").value
     const noise_model   = document.getElementById("noise_model").value || null
     const shots         = document.getElementById("shots").value
+
+    // Obtenemos las instrucciones mapeadas al formato viejo desde CircuitGrid
+    const instructions = window.getLegacyInstructions ? window.getLegacyInstructions() : [];
 
     const payload = {
       num_qubits:    parseInt(num_qubits),
@@ -210,11 +379,20 @@ const apiBase = import.meta.env.PUBLIC_API_BASE_URL;
     })
 
     const retorno = await response.json()
-    document.getElementById("result").innerHTML =
-      `
-        Estado: ${retorno.status} \n
-        Probabilidades: ${JSON.stringify(retorno.data.probabilities)}
-    `
+    
+    // Attach last gate info for Bloch sphere animation
+    if (retorno.data && instructions.length > 0) {
+        const lastGate = instructions[instructions.length - 1];
+        retorno.data._lastGateInfo = {
+            type: lastGate.name,
+            qubit: lastGate.qubits ? lastGate.qubits[lastGate.qubits.length - 1] : 0
+        };
+    }
+
+    // Llamar a la función del componente QuantumResults para renderizar
+    if (window.renderQuantumResults) {
+        window.renderQuantumResults(retorno.data);
+    }
   })
 
 </script>

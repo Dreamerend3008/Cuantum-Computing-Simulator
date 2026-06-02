@@ -15,3 +15,6 @@
 
 # Verde
 - #73fd3d
+
+# Purple
+- #8E44AD;
