@@ -1,0 +1,157 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import { getCollection, render } from 'astro:content';
+
+export async function getStaticPaths() {
+	const entries = await getCollection('theory');
+	return entries.map((entry) => ({
+		params: { slug: entry.id },
+		props: { entry },
+	}));
+}
+
+const { entry } = Astro.props;
+const { Content } = await render(entry);
+---
+
+<Layout title={`${entry.data.title} — Kuantum`}>
+	<article class="lesson">
+		<nav class="breadcrumb">
+			<a href="/teoria/">← Aprender</a>
+		</nav>
+
+		<header class="lesson-header">
+			<h1>{entry.data.title}</h1>
+			<p class="lesson-desc">{entry.data.description}</p>
+		</header>
+
+		<div class="lesson-body">
+			<Content />
+		</div>
+
+		<aside class="simulator-callout">
+			<h2>Llevarlo al simulador</h2>
+			<a href="/simulador/" class="btn-sim">Abrir simulador</a>
+		</aside>
+	</article>
+</Layout>
+
+<style>
+	.lesson {
+		max-width: 42rem;
+	}
+
+	.breadcrumb {
+		margin-bottom: 1.5rem;
+	}
+
+	.breadcrumb a {
+		color: var(--koala-grey);
+		text-decoration: none;
+		font-size: 0.95rem;
+	}
+
+	.breadcrumb a:hover {
+		color: var(--accent-purple);
+	}
+
+	.lesson-header {
+		margin-bottom: 2rem;
+	}
+
+	.lesson-header h1 {
+		margin: 0 0 0.5rem;
+		font-size: clamp(1.5rem, 3.5vw, 2.25rem);
+	}
+
+	.lesson-desc {
+		margin: 0;
+		color: var(--koala-grey);
+		line-height: 1.5;
+	}
+
+	.lesson-body :global(h2) {
+		margin: 2rem 0 0.75rem;
+		font-size: 1.35rem;
+	}
+
+	.lesson-body :global(h2:first-child) {
+		margin-top: 0;
+	}
+
+	.lesson-body :global(h3) {
+		margin: 1.5rem 0 0.5rem;
+		font-size: 1.1rem;
+	}
+
+	.lesson-body :global(p) {
+		line-height: 1.7;
+		margin: 0 0 1rem;
+	}
+
+	.lesson-body :global(ul),
+	.lesson-body :global(ol) {
+		margin: 0 0 1rem;
+		padding-left: 1.25rem;
+		line-height: 1.7;
+	}
+
+	.lesson-body :global(table) {
+		width: 100%;
+		border-collapse: collapse;
+		margin: 0 0 1.25rem;
+		font-size: 0.95rem;
+	}
+
+	.lesson-body :global(th),
+	.lesson-body :global(td) {
+		border: 1px solid color-mix(in srgb, var(--koala-grey) 40%, transparent);
+		padding: 0.5rem 0.75rem;
+		text-align: left;
+	}
+
+	.lesson-body :global(th) {
+		background: color-mix(in srgb, var(--primary-blue) 12%, var(--bg-color));
+	}
+
+	.lesson-body :global(code) {
+		font-size: 0.9em;
+		padding: 0.15rem 0.35rem;
+		border-radius: 4px;
+		background: color-mix(in srgb, var(--koala-grey) 20%, transparent);
+	}
+
+	.simulator-callout {
+		margin-top: 2.5rem;
+		padding: 1.25rem 1.5rem;
+		border-radius: 12px;
+		border-left: 4px solid var(--accent-purple);
+		background: color-mix(in srgb, var(--accent-purple) 8%, var(--bg-color));
+	}
+
+	.simulator-callout h2 {
+		margin: 0 0 0.5rem;
+		font-size: 1.1rem;
+	}
+
+	.simulator-callout p {
+		margin: 0 0 1rem;
+		line-height: 1.6;
+		color: var(--koala-grey);
+	}
+
+	.btn-sim {
+		display: inline-block;
+		padding: 0.6rem 1.25rem;
+		border-radius: 8px;
+		background: var(--accent-purple);
+		color: #fff;
+		font-weight: 600;
+		text-decoration: none;
+		transition: opacity 0.2s;
+	}
+
+	.btn-sim:hover {
+		opacity: 0.9;
+	}
+</style>
