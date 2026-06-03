@@ -23,14 +23,9 @@ def run_statevector_simulation(qc: QuantumCircuit) -> np.ndarray:
 
     return dict(zip(bits, values))
 def run_shot_simulator(qc: QuantumCircuit, number_shots: int, n_model: str):
-    simulator = AerSimulator()
+    noise_model = get_noise_model(n_model) if n_model else None
+    # Pass noise_model to constructor so transpile() uses the correct basis gates
+    simulator = AerSimulator(noise_model=noise_model) if noise_model else AerSimulator()
     qc_transpiled = transpile(qc, simulator)
-    if not n_model:
-        return simulator.run(qc_transpiled,shots=number_shots).result()
-    else:
-        return simulator.run(
-            qc_transpiled,
-            shots=number_shots, 
-            noise_model=get_noise_model(n_model)
-        ).result()
+    return simulator.run(qc_transpiled, shots=number_shots).result()
 

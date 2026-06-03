@@ -237,28 +237,49 @@
         const nQubits = sampleKey.length || 1;
         const dim = 1 << nQubits;
 
-        // Generate keys in exact order 0 to 2^n - 1
-        // Qiskit ordering: bits are zero-padded, then REVERSED
+        // Generate keys in classical (big-endian) order: 00, 01, 10, 11
         const orderedKeys = [];
         for (let i = 0; i < dim; i++) {
-            let bin = i.toString(2).padStart(nQubits, '0');
-            orderedKeys.push(bin.split('').reverse().join(''));
+            orderedKeys.push(i.toString(2).padStart(nQubits, '0'));
         }
 
-        for (const state of orderedKeys) {
-            let qiskitState = state.split('').reverse().join('');
-            // Intentar obtener la probabilidad con la notación ya invertida (clásica), o con la de Qiskit por si acaso
-            const prob = probabilities[state] !== undefined ? probabilities[state] : (probabilities[qiskitState] || 0);
-            
-            // Re-guardamos para consistencia más adelante
-            probabilities[state] = prob;
+        // Build display probabilities without mutating the original
+        // Backend ALWAYS returns Qiskit ordering (little-endian), so we ALWAYS
+        // look up using the reversed key. Never try classical key first because
+        // keys like "10" exist in both orderings but mean different states.
+        const displayProbs = {};
+        for (const classicalKey of orderedKeys) {
+            const qiskitKey = classicalKey.split('').reverse().join('');
+            const prob = probabilities[qiskitKey] || 0;
+            displayProbs[classicalKey] = prob;
 
-            labels.push(`|${state}⟩`);
-            dataPoints.push(prob * 100); // Guardar como porcentaje (0-100)
+            labels.push(`|${classicalKey}⟩`);
+            dataPoints.push(prob * 100);
             
             if (prob > maxProb) {
                 maxProb = prob;
-                dominantState = state;
+                dominantState = classicalKey;
+            }
+        }
+
+        // Also build display statevector (reordered to classical)
+        let hasStateVector = Array.isArray(data.statevector) || (typeof data.statevector === 'object' && data.statevector !== null);
+        let svArray = [];
+        if (hasStateVector) {
+            if (Array.isArray(data.statevector)) {
+                // Array is indexed by Qiskit integer (q0=LSB). Reorder to classical.
+                for (const classicalKey of orderedKeys) {
+                    const qiskitKey = classicalKey.split('').reverse().join('');
+                    const qiskitIndex = parseInt(qiskitKey, 2);
+                    svArray.push(data.statevector[qiskitIndex] !== undefined 
+                        ? data.statevector[qiskitIndex] : "0j");
+                }
+            } else {
+                // Dict: look up by Qiskit key
+                for (const classicalKey of orderedKeys) {
+                    const qiskitKey = classicalKey.split('').reverse().join('');
+                    svArray.push(data.statevector[qiskitKey] || "0j");
+                }
             }
         }
 
@@ -272,10 +293,10 @@
         // Asignar colores (rosa para el dominante, azul para el resto)
         labels.forEach(label => {
             if (label === `|${dominantState}⟩`) {
-                bgColors.push('rgba(233, 56, 176, 0.8)'); // accent-pink
+                bgColors.push('rgba(233, 56, 176, 0.8)');
                 borderColors.push('rgba(233, 56, 176, 1)');
             } else {
-                bgColors.push('rgba(37, 150, 190, 0.6)'); // primary-blue
+                bgColors.push('rgba(37, 150, 190, 0.6)');
                 borderColors.push('rgba(37, 150, 190, 1)');
             }
         });
@@ -328,32 +349,12 @@
         // 3. Poblar la Tabla Detallada
         const tbody = document.getElementById('amplitudes-tbody');
         tbody.innerHTML = '';
-        
-        // Si hay statevector (normalmente viene como dict o array en python pero asumimos
-        // que el backend lo formatea o podemos deducir de las probabilidades si solo hay shots)
-        // Para asegurar que la tabla siempre es útil, iteraremos sobre los labels.
-        
-        let hasStateVector = Array.isArray(data.statevector) || typeof data.statevector === 'object' && data.statevector !== null;
-        let svArray = [];
-        if (hasStateVector) {
-            // Convert to array if it's a dict mapped by binary strings
-            if (!Array.isArray(data.statevector)) {
-                // If it's an object mapping "00": "0.7j" etc.
-                for (const k of orderedKeys) {
-                    let qiskitK = k.split('').reverse().join('');
-                    svArray.push(data.statevector[k] !== undefined ? data.statevector[k] : (data.statevector[qiskitK] || "0j"));
-                }
-            } else {
-                svArray = data.statevector;
-            }
-        }
 
         let index = 0;
         for (const state of orderedKeys) {
-            const prob = probabilities[state] || 0;
+            const prob = displayProbs[state] || 0;
             const tr = document.createElement('tr');
             
-            // Col 1: Estado
             const tdState = document.createElement('td');
             tdState.innerText = `|${state}⟩`;
             tr.appendChild(tdState);
@@ -366,32 +367,25 @@
                 imag = comp.i;
                 mag = Math.sqrt(real*real + imag*imag);
             } else {
-                // Modo Shot: Solo tenemos probabilidades aproximadas, inferimos magnitud = sqrt(prob)
-                // y asumimos que es real positivo (ya que no hay fases en conteos)
                 mag = Math.sqrt(prob);
                 real = mag;
                 imag = 0;
             }
 
-            // Col 2: Real
             const tdReal = document.createElement('td');
             tdReal.innerText = real.toFixed(4);
             tr.appendChild(tdReal);
 
-            // Col 3: Imag
             const tdImag = document.createElement('td');
             tdImag.innerText = imag.toFixed(4) + 'j';
             tr.appendChild(tdImag);
 
-            // Col 4: Magnitud
             const tdMag = document.createElement('td');
             tdMag.innerText = mag.toFixed(4);
             tr.appendChild(tdMag);
 
-            // Col 5: Prob
             const tdProb = document.createElement('td');
             tdProb.innerText = (prob * 100).toFixed(2) + '%';
-            // Resaltar la probabilidad del dominante
             if (state === dominantState) {
                 tdProb.style.fontWeight = 'bold';
                 tdProb.style.color = 'var(--accent-pink)';
@@ -405,8 +399,7 @@
         // --- Integración con BlochSphere ---
         if (window.updateBlochFromSimulation) {
             const gateInfo = data._lastGateInfo || null;
-            // Pass: probabilities dict, statevector array (if available), gate info, num qubits
-            window.updateBlochFromSimulation(probabilities, svArray, gateInfo, nQubits);
+            window.updateBlochFromSimulation(displayProbs, svArray, gateInfo, nQubits);
         }
     };
 </script>
