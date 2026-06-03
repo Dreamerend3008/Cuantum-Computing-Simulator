@@ -1,58 +1,75 @@
 ---
 title: Introducción a la computación cuántica
-description: Qubits, circuitos y nociones básicas para usar Kuantum.
+description: Qubits y nociones básicas para usar Kuantum.
 order: 1
+---
+
+La computación cuántica usa **qubits** en lugar de bits clásicos. Un bit clásico solo puede tener el valor **0** o **1**. Un qubit también puede medirse como 0 o 1, pero antes de medirlo puede estar en una **superposición** de ambos estados.
+
+> **Recuerda:** En Kuantum prepararás qubits, aplicarás compuertas y ejecutarás una simulación para observar probabilidades o estados resultantes.
+
 ---
 
 ## ¿Qué es un qubit?
 
-En un bit clásico el valor es **0** o **1**. Un **qubit** (quantum bit) puede prepararse en una combinación de ambos estados. Lo habitual es escribirlo así:
+Un **qubit** (quantum bit) es la unidad básica de información cuántica. Sus dos estados base se escriben como:
 
-|0⟩ y |1⟩
+| Estado | Significado |
+|--------|-------------|
+| **\|0⟩** | Estado base cero |
+| **\|1⟩** | Estado base uno |
 
-Un estado general se escribe **α|0⟩ + β|1⟩**, donde α y β son números complejos y |α|² + |β|² = 1. Al **medir**, solo verás 0 o 1; las probabilidades son |α|² y |β|².
+Un estado general se escribe como **α\|0⟩ + β\|1⟩**, donde **α** y **β** son amplitudes. Esas amplitudes indican qué tan probable es obtener 0 o 1 al medir.
 
-En Kuantum prepararás cada qubit en |0⟩ o |1⟩ antes de aplicar puertas. Con varios qubits, el estado inicial se describe como una secuencia de ceros y unos (por ejemplo `00` = ambos en |0⟩).
+| Amplitud | Probabilidad asociada |
+|----------|-----------------------|
+| **α** | Probabilidad de medir **\|0⟩**: **\|α\|²** |
+| **β** | Probabilidad de medir **\|1⟩**: **\|β\|²** |
 
-## ¿Qué es un circuito cuántico?
+Para que el estado sea válido, las probabilidades deben sumar 1:
 
-Un circuito es una secuencia de **puertas** aplicadas a uno o más qubits:
+**\|α\|² + \|β\|² = 1**
 
-- Cada **línea horizontal** es un qubit.
-- Las **puertas** se aplican en orden (de izquierda a derecha en los diagramas habituales).
-- Algunas puertas actúan sobre varios qubits a la vez (por ejemplo **CX**, también llamada CNOT).
+---
 
-El **simulador** de Kuantum servirá para montar ese circuito de forma visual. En la práctica: eliges cuántos qubits hay, colocas puertas y ejecutas la simulación para ver el resultado.
+## Superposición
 
-## Cómo se numeran los qubits
+Un qubit no tiene que estar completamente en **\|0⟩** o completamente en **\|1⟩**. Puede estar en una combinación de ambos. Por ejemplo, después de aplicar una puerta **H** (Hadamard) a un qubit en **\|0⟩**, el resultado tiene la misma probabilidad de medirse como 0 o como 1.
 
-En la mayoría de herramientas cuánticas —incluido Kuantum— el **primer** qubit es el **0**, el segundo es el **1**, y así sucesivamente:
+| Estado antes | Operación | Resultado esperado al medir |
+|--------------|-----------|-----------------------------|
+| **\|0⟩** | **H** | 50% **0** y 50% **1** |
+| **\|1⟩** | **H** | 50% **0** y 50% **1**, con diferencia de fase |
 
-| Orden habitual | Índice |
-|----------------|--------|
-| Primer qubit   | 0      |
-| Segundo qubit  | 1      |
-| Tercer qubit   | 2      |
+**Analogía:** Es como una moneda en el aire: todavía no ha caído en cara o cruz, pero ambas posibilidades participan en el resultado.
 
-Si el circuito tiene **2 qubits**, solo existen los índices **0** y **1**. Referirse a un “tercer qubit” en ese caso no tiene sentido y la simulación no podrá ejecutarse correctamente.
+---
 
-## Medición y tipos de resultado
+## La esfera de Bloch
 
-Según cómo quieras ver el resultado, Kuantum podrá ofrecer enfoques como estos (los nombres exactos en pantalla los definirá la interfaz gráfica):
+La **esfera de Bloch** es una forma visual de representar el estado de un qubit. En la imagen, cada dirección que puede tomar el vector representa un estado posible del qubit.
 
-- **Varias ejecuciones (estilo “shots”):** el circuito se corre muchas veces y obtienes **probabilidades** de leer cada cadena de bits (por ejemplo 50 % `0` y 50 % `1` con un qubit en superposición).
-- **Estado completo (estilo “statevector”):** ves las **amplitudes** del estado cuántico antes de resumirlo en estadísticas de medición.
+![Representación de un qubit en la esfera de Bloch](/images/theory/bloch-sphere.png)
 
-En el primer caso suele medirse al final; en el segundo se trabaja con el estado sin pasar por muchas mediciones repetidas.
+| Parte de la esfera | Qué representa |
+|--------------------|----------------|
+| **Polo norte** | Estado **\|0⟩** |
+| **Polo sur** | Estado **\|1⟩** |
+| **Ecuador** | Superposiciones equilibradas entre **\|0⟩** y **\|1⟩** |
+| **Más cerca del polo norte** | Mayor probabilidad de medir **0** |
+| **Más cerca del polo sur** | Mayor probabilidad de medir **1** |
+| **Giro alrededor del eje vertical** | Cambio de fase del qubit |
 
-## Primer experimento sugerido
+---
 
-Cuando uses el simulador, un buen primer paso es:
+## Fase de un qubit
 
-1. Un circuito de **1 qubit** preparado en |0⟩.
-2. Aplicar la puerta **H** (Hadamard) a ese qubit.
-3. Ejecutar la simulación y observar el resultado.
+Además de las probabilidades, un qubit tiene **fase**. La fase describe hacia qué lado apunta el vector cuando gira alrededor del eje vertical de la esfera de Bloch. Dos qubits pueden estar a la misma altura en la esfera, y por eso tener la misma probabilidad de medirse como **0** o **1**, pero apuntar hacia lados distintos. Esa diferencia es la fase.
 
-La puerta **H** lleva |0⟩ a una superposición equilibrada entre |0⟩ y |1⟩: es el ejemplo más simple para ver probabilidades distintas de 0 % y 100 %.
+| Cambio | Qué ocurre |
+|--------|------------|
+| Cambiar amplitudes | Cambia las probabilidades de medir 0 o 1 |
+| Cambiar fase | Puede no cambiar las probabilidades inmediatamente, pero afecta futuras operaciones |
 
-Continúa con [Compuertas básicas](/teoria/compuertas-basicas/), el [circuito de Bell](/teoria/circuito-bell/) y [Leer resultados de la simulación](/teoria/leer-resultados/).
+> **Importante:** Dos estados pueden tener las mismas probabilidades de medición y aun así comportarse distinto por su fase.
+
