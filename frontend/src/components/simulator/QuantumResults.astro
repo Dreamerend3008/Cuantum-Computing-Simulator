@@ -180,35 +180,35 @@
     // Fallback simple si no viene statevector o viene en un formato no esperado
     function parseComplex(complexStr) {
         if (typeof complexStr !== 'string') return { r: 0, i: 0 };
-        // Eliminar paréntesis y espacios
         let s = complexStr.replace(/[()\s]/g, '');
-        
-        // Manejo básico de signos y 'j'
-        let r = 0, i = 0;
-        
-        // Es un caso simple de solo imaginario ej. '1j', '-1j'
-        if (s.includes('j') && !s.includes('+', 1) && !s.includes('-', 1)) {
-            let val = s.replace('j', '');
-            if (val === '' || val === '+') i = 1;
-            else if (val === '-') i = -1;
-            else i = parseFloat(val);
-            return { r, i };
-        }
+        if (s === '') return { r: 0, i: 0 };
 
-        // Caso normal "A+Bj" o "A-Bj"
-        // Buscamos el operador del medio, ignorando el primer caracter por si es negativo
-        let opIndex = Math.max(s.lastIndexOf('+'), s.lastIndexOf('-'));
-        if (opIndex > 0) {
-            let rStr = s.substring(0, opIndex);
-            let iStr = s.substring(opIndex).replace('j', '');
-            
-            r = parseFloat(rStr);
-            if (iStr === '+' || iStr === '') i = 1;
-            else if (iStr === '-') i = -1;
-            else i = parseFloat(iStr);
+        // Handle edge cases of pure j with no leading digits
+        if (s === 'j' || s === '+j') return { r: 0, i: 1 };
+        if (s === '-j') return { r: 0, i: -1 };
+
+        const floatRegex = /[-+]?(?:\d+\.?\d*|\.\d+)(?:[eE][-+]?\d+)?/g;
+        const parts = s.match(floatRegex);
+        if (!parts) return { r: 0, i: 0 };
+
+        let r = 0, i = 0;
+
+        if (s.endsWith('j')) {
+            if (parts.length === 1) {
+                // Pure imaginary like "-17j" or "1j" or "-j"
+                let p = parts[0];
+                if (p === '+' || p === '-') i = parseFloat(p + '1');
+                else i = parseFloat(p);
+            } else if (parts.length >= 2) {
+                // Complex like "0.5-17j"
+                r = parseFloat(parts[0]);
+                let p = parts[1];
+                if (p === '+' || p === '-') i = parseFloat(p + '1');
+                else i = parseFloat(p);
+            }
         } else {
-            // Solo real
-            r = parseFloat(s);
+            // Pure real like "0.5"
+            r = parseFloat(parts[0]);
         }
 
         return { r: isNaN(r) ? 0 : r, i: isNaN(i) ? 0 : i };
@@ -233,7 +233,26 @@
         const bgColors = [];
         const borderColors = [];
 
-        for (const [state, prob] of Object.entries(probabilities)) {
+        const sampleKey = Object.keys(probabilities)[0] || '';
+        const nQubits = sampleKey.length || 1;
+        const dim = 1 << nQubits;
+
+        // Generate keys in exact order 0 to 2^n - 1
+        // Qiskit ordering: bits are zero-padded, then REVERSED
+        const orderedKeys = [];
+        for (let i = 0; i < dim; i++) {
+            let bin = i.toString(2).padStart(nQubits, '0');
+            orderedKeys.push(bin.split('').reverse().join(''));
+        }
+
+        for (const state of orderedKeys) {
+            let qiskitState = state.split('').reverse().join('');
+            // Intentar obtener la probabilidad con la notación ya invertida (clásica), o con la de Qiskit por si acaso
+            const prob = probabilities[state] !== undefined ? probabilities[state] : (probabilities[qiskitState] || 0);
+            
+            // Re-guardamos para consistencia más adelante
+            probabilities[state] = prob;
+
             labels.push(`|${state}⟩`);
             dataPoints.push(prob * 100); // Guardar como porcentaje (0-100)
             
@@ -314,34 +333,24 @@
         // que el backend lo formatea o podemos deducir de las probabilidades si solo hay shots)
         // Para asegurar que la tabla siempre es útil, iteraremos sobre los labels.
         
-        let hasStateVector = Array.isArray(data.statevector) || typeof data.statevector === 'object';
+        let hasStateVector = Array.isArray(data.statevector) || typeof data.statevector === 'object' && data.statevector !== null;
         let svArray = [];
         if (hasStateVector) {
             // Convert to array if it's a dict mapped by binary strings
             if (!Array.isArray(data.statevector)) {
                 // If it's an object mapping "00": "0.7j" etc.
-                Object.keys(probabilities).forEach(k => {
-                    svArray.push(data.statevector[k] || "0j");
-                });
+                for (const k of orderedKeys) {
+                    let qiskitK = k.split('').reverse().join('');
+                    svArray.push(data.statevector[k] !== undefined ? data.statevector[k] : (data.statevector[qiskitK] || "0j"));
+                }
             } else {
                 svArray = data.statevector;
             }
         }
 
-        // --- CALCULAR FALLBACK PARA BLOCH SPHERE ---
-        let blochArray = svArray;
-        if (!hasStateVector || blochArray.length < 2) {
-            let p0 = 0, p1 = 0;
-            for (const [state, prob] of Object.entries(probabilities)) {
-                // Asumiendo que el qubit 0 es el último caracter del string
-                if (state.endsWith('0')) p0 += prob;
-                else p1 += prob;
-            }
-            blochArray = [Math.sqrt(p0).toString(), Math.sqrt(p1).toString()];
-        }
-
         let index = 0;
-        for (const [state, prob] of Object.entries(probabilities)) {
+        for (const state of orderedKeys) {
+            const prob = probabilities[state] || 0;
             const tr = document.createElement('tr');
             
             // Col 1: Estado
@@ -394,14 +403,10 @@
         }
 
         // --- Integración con BlochSphere ---
-        // Pass probabilities dict directly so BlochSphere can compute per-qubit states
-        const sampleKey = Object.keys(probabilities)[0] || '';
-        const nQubits = sampleKey.length || 1;
-
         if (window.updateBlochFromSimulation) {
             const gateInfo = data._lastGateInfo || null;
             // Pass: probabilities dict, statevector array (if available), gate info, num qubits
-            window.updateBlochFromSimulation(probabilities, blochArray, gateInfo, nQubits);
+            window.updateBlochFromSimulation(probabilities, svArray, gateInfo, nQubits);
         }
     };
 </script>

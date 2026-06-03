@@ -37,23 +37,12 @@
 
             <hr class="divider" />
 
-            <div class="state-presets">
-                <span>Presets:</span>
-                <button class="preset-btn" data-state="0">|0⟩</button>
-                <button class="preset-btn" data-state="1">|1⟩</button>
-                <button class="preset-btn" data-state="+">|+⟩</button>
-                <button class="preset-btn" data-state="-">|−⟩</button>
-                <button class="preset-btn" data-state="i">|i⟩</button>
-                <button class="preset-btn" data-state="-i">|−i⟩</button>
-            </div>
-
-            <hr class="divider" />
 
             <div class="history-controls">
                 <h4>Transición de Estados</h4>
                 <div class="history-btns">
-                    <button id="btn-prev-state" class="btn-bloch btn-outline" disabled>← Anterior</button>
-                    <button id="btn-next-state" class="btn-bloch btn-outline" disabled>Actual →</button>
+                    <button id="btn-prev-state" class="btn-bloch btn-outline" disabled>|0⟩ Inicial</button>
+                    <button id="btn-next-state" class="btn-bloch btn-outline" disabled>Actual ψ</button>
                 </div>
             </div>
 
@@ -132,32 +121,31 @@
         font-size: 0.95rem;
         color: var(--text-main);
     }
-    .qubit-tabs {
+    :global(.qubit-tabs) {
         display: flex;
         gap: 0.4rem;
         flex-wrap: wrap;
     }
-    .qubit-tab {
+    :global(.qubit-tab) {
         padding: 0.4rem 0.9rem;
-        border: 2px solid rgba(37, 150, 190, 0.25);
+        border: none;
         border-radius: 8px;
         background: transparent;
-        color: var(--primary-blue);
-        font-weight: 700;
+        color: var(--koala-grey);
+        font-weight: 600;
         font-size: 0.85rem;
         cursor: pointer;
-        transition: all 0.25s;
+        transition: all 0.2s ease;
         font-family: 'Inter', sans-serif;
     }
-    .qubit-tab:hover {
+    :global(.qubit-tab:hover) {
+        color: var(--primary-blue);
         background: rgba(37, 150, 190, 0.08);
-        border-color: var(--primary-blue);
     }
-    .qubit-tab.active {
-        background: var(--primary-blue);
-        color: #fff;
-        border-color: var(--primary-blue);
-        box-shadow: 0 2px 8px rgba(37, 150, 190, 0.35);
+    :global(.qubit-tab.active) {
+        color: var(--primary-blue);
+        background: rgba(37, 150, 190, 0.15);
+        font-weight: 700;
     }
 
     /* Gate Info */
@@ -226,31 +214,7 @@
         cursor: not-allowed;
     }
 
-    .state-presets {
-        display: flex;
-        align-items: center;
-        flex-wrap: wrap;
-        gap: 0.45rem;
-        font-size: 0.85rem;
-        color: var(--text-main);
-    }
-    .preset-btn {
-        background: rgba(0,0,0,0.04);
-        border: 1px solid rgba(0,0,0,0.08);
-        padding: 0.35rem 0.7rem;
-        border-radius: 6px;
-        cursor: pointer;
-        font-weight: 700;
-        color: var(--primary-blue);
-        transition: all 0.2s;
-        font-family: 'Inter', sans-serif;
-        font-size: 0.82rem;
-    }
-    .preset-btn:hover {
-        background: rgba(37, 150, 190, 0.12);
-        border-color: var(--primary-blue);
-        transform: translateY(-1px);
-    }
+
 
     .divider {
         border: 0;
@@ -338,7 +302,7 @@
         if (!qubitStates[q]) {
             qubitStates[q] = {
                 current: { x: 0, y: 0, z: 1 },
-                previous: { x: 0, y: 0, z: 1 }
+                previous: { x: 0, y: 0, z: 1 }  // Always |0⟩ (Qiskit default)
             };
         }
     }
@@ -350,38 +314,44 @@
     let currentArrowDir = null;
     let animFrame = null;
 
-    // Glow / atmosphere meshes
-    let glowMesh, innerGlowMesh;
+    // Glow mesh (outer only)
+    let glowMesh;
     // Trail points for gate animation paths
     let trailPoints = [];
 
     // ============================================================
     // COMPLEX NUMBER PARSER
     // ============================================================
-    function parseComplex(s) {
-        if (typeof s !== 'string') return { r: 0, i: 0 };
-        s = s.replace(/[\(\)\s]/g, '');
+    function parseComplex(complexStr) {
+        if (typeof complexStr !== 'string') return { r: 0, i: 0 };
+        let s = complexStr.replace(/[()\s]/g, '');
+        if (s === '') return { r: 0, i: 0 };
+
+        // Handle edge cases of pure j with no leading digits
+        if (s === 'j' || s === '+j') return { r: 0, i: 1 };
+        if (s === '-j') return { r: 0, i: -1 };
+
+        const floatRegex = /[-+]?(?:\d+\.?\d*|\.\d+)(?:[eE][-+]?\d+)?/g;
+        const parts = s.match(floatRegex);
+        if (!parts) return { r: 0, i: 0 };
+
         let r = 0, i = 0;
 
-        // Pure imaginary
-        if (s.includes('j') && !s.includes('+', 1) && !s.includes('-', 1)) {
-            let val = s.replace('j', '');
-            if (val === '' || val === '+') i = 1;
-            else if (val === '-') i = -1;
-            else i = parseFloat(val);
-            return { r, i };
-        }
-        let opIndex = Math.max(s.lastIndexOf('+'), s.lastIndexOf('-'));
-        if (opIndex > 0) {
-            let rStr = s.substring(0, opIndex);
-            let iStr = s.substring(opIndex).replace('j', '');
-            r = parseFloat(rStr);
-            if (iStr === '+' || iStr === '') i = 1;
-            else if (iStr === '-') i = -1;
-            else i = parseFloat(iStr);
+        if (s.endsWith('j')) {
+            if (parts.length === 1) {
+                let p = parts[0];
+                if (p === '+' || p === '-') i = parseFloat(p + '1');
+                else i = parseFloat(p);
+            } else if (parts.length >= 2) {
+                r = parseFloat(parts[0]);
+                let p = parts[1];
+                if (p === '+' || p === '-') i = parseFloat(p + '1');
+                else i = parseFloat(p);
+            }
         } else {
-            r = parseFloat(s);
+            r = parseFloat(parts[0]);
         }
+
         return { r: isNaN(r) ? 0 : r, i: isNaN(i) ? 0 : i };
     }
 
@@ -574,7 +544,8 @@
             }
 
             if (!bloch) continue;
-            qubitStates[q].previous = { ...qubitStates[q].current };
+            // Previous is ALWAYS |0⟩ (Qiskit default before any gate)
+            qubitStates[q].previous = { x: 0, y: 0, z: 1 };
             qubitStates[q].current = bloch;
         }
 
@@ -642,52 +613,28 @@
         controls.maxDistance = 14;
 
         // =========================
-        // SPHERE — Enhanced visibility
+        // SPHERE — Clean wireframe only
         // =========================
-        // Main solid sphere (semi-transparent, glassy)
-        const sphereGeo = new THREE.SphereGeometry(SPHERE_RADIUS, 64, 64);
-        const sphereMat = new THREE.MeshPhongMaterial({
-            color: 0x1a2844,
-            transparent: true,
-            opacity: 0.18,
-            shininess: 80,
-            specular: 0x4488cc,
-            side: THREE.FrontSide,
-            depthWrite: false
-        });
-        scene.add(new THREE.Mesh(sphereGeo, sphereMat));
-
-        // Wireframe overlay (subtle grid)
-        const wireGeo = new THREE.SphereGeometry(SPHERE_RADIUS + 0.005, 24, 24);
+        // Wireframe mesh (the only visible sphere)
+        const wireGeo = new THREE.SphereGeometry(SPHERE_RADIUS, 32, 32);
         const wireMat = new THREE.MeshBasicMaterial({
-            color: 0x3399cc,
+            color: 0x4db8d9,
             wireframe: true,
             transparent: true,
-            opacity: 0.06
+            opacity: 0.12
         });
         scene.add(new THREE.Mesh(wireGeo, wireMat));
 
-        // Outer glow shell
-        const glowGeo = new THREE.SphereGeometry(SPHERE_RADIUS * 1.08, 48, 48);
+        // Outer glow shell (subtle ambient glow, no artifacts)
+        const glowGeo = new THREE.SphereGeometry(SPHERE_RADIUS * 1.06, 48, 48);
         const glowMat = new THREE.MeshBasicMaterial({
             color: 0x2596be,
             transparent: true,
-            opacity: 0.04,
+            opacity: 0.035,
             side: THREE.BackSide
         });
         glowMesh = new THREE.Mesh(glowGeo, glowMat);
         scene.add(glowMesh);
-
-        // Inner subtle glow
-        const innerGlowGeo = new THREE.SphereGeometry(SPHERE_RADIUS * 0.98, 48, 48);
-        const innerGlowMat = new THREE.MeshBasicMaterial({
-            color: 0x6644aa,
-            transparent: true,
-            opacity: 0.03,
-            side: THREE.BackSide
-        });
-        innerGlowMesh = new THREE.Mesh(innerGlowGeo, innerGlowMat);
-        scene.add(innerGlowMesh);
 
         // =========================
         // GREAT CIRCLES (Equator + Meridians)
@@ -804,19 +751,8 @@
         // =========================
         // LIGHTING
         // =========================
-        scene.add(new THREE.AmbientLight(0xffffff, 0.35));
-
-        const dirLight = new THREE.DirectionalLight(0xffffff, 0.5);
-        dirLight.position.set(5, 8, 5);
-        scene.add(dirLight);
-
-        const pointLight1 = new THREE.PointLight(0x2596be, 0.4, 25);
-        pointLight1.position.set(-4, 4, -4);
-        scene.add(pointLight1);
-
-        const pointLight2 = new THREE.PointLight(0x8E44AD, 0.2, 20);
-        pointLight2.position.set(4, -2, 3);
-        scene.add(pointLight2);
+        // Only ambient light — no directional/point lights to avoid specular artifacts
+        scene.add(new THREE.AmbientLight(0xffffff, 0.5));
 
         // Origin dot
         const originGeo = new THREE.SphereGeometry(0.05, 12, 12);
@@ -1037,12 +973,18 @@
         if (!arrowHelper || !THREE_LIB) return;
 
         const len = pos.length();
+        const arrowLen = SPHERE_RADIUS * Math.min(len, 1.0);
         const dir = safeNormalize(pos);
-        const arrowLen = Math.max(0.1, SPHERE_RADIUS * Math.min(len, 1.0));
 
         try {
-            arrowHelper.setDirection(dir);
-            arrowHelper.setLength(arrowLen, Math.min(0.3, arrowLen * 0.14), 0.14);
+            if (arrowLen < 0.001) {
+                arrowHelper.setLength(0.001, 0.001, 0.001);
+                arrowHelper.visible = false;
+            } else {
+                arrowHelper.visible = true;
+                arrowHelper.setDirection(dir);
+                arrowHelper.setLength(arrowLen, Math.min(0.3, arrowLen * 0.14), 0.14);
+            }
         } catch(e) {
             // ArrowHelper.setDirection can fail for degenerate directions
         }
@@ -1081,34 +1023,13 @@
     }
 
     // ============================================================
-    // PRESET STATES
-    // ============================================================
-    const presetStates = {
-        '0':  { x: 0, y: 0, z: 1 },
-        '1':  { x: 0, y: 0, z: -1 },
-        '+':  { x: 1, y: 0, z: 0 },
-        '-':  { x: -1, y: 0, z: 0 },
-        'i':  { x: 0, y: 1, z: 0 },
-        '-i': { x: 0, y: -1, z: 0 },
-    };
-
-    function setBlochState(bloch) {
-        initQubitState(selectedQubit);
-        qubitStates[selectedQubit].previous = { ...qubitStates[selectedQubit].current };
-        qubitStates[selectedQubit].current = bloch;
-        updateStats(bloch);
-        if (btnPrev) btnPrev.disabled = false;
-        if (btnNext) btnNext.disabled = true;
-        if (arrowHelper && THREE_LIB) animateVectorTo(bloch, 'slerp');
-    }
-
-    // ============================================================
     // EVENT LISTENERS
     // ============================================================
     if (btnPrev) {
         btnPrev.addEventListener('click', () => {
             const qs = qubitStates[selectedQubit];
             if (!qs) return;
+            // Always go to |0⟩ (Qiskit default)
             animateVectorTo(qs.previous, 'slerp');
             updateStats(qs.previous);
             btnPrev.disabled = true;
@@ -1126,13 +1047,6 @@
             btnNext.disabled = true;
         });
     }
-
-    document.querySelectorAll('.preset-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-            const key = btn.getAttribute('data-state');
-            if (presetStates[key]) setBlochState(presetStates[key]);
-        });
-    });
 
     // Listen for qubit count changes from CircuitGrid
     const qubitsInput = document.getElementById('num_qubits');

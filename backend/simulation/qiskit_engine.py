@@ -16,7 +16,7 @@ def run_statevector_simulation(qc: QuantumCircuit) -> np.ndarray:
     
     job = simulator.run(simulation_circuit)
     result = job.result()
-    values = np.asarray(result.get_statevector()).real.tolist()
+    values = np.asarray(result.get_statevector()).tolist()
 
     limit = 2**num_qubits
     bits = [f"{i:0{num_qubits}b}"[::-1] for i in range(2**num_qubits)]

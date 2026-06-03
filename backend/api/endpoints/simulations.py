@@ -35,11 +35,16 @@ def executeSimulation(ci: CircuitInput):
 
     counts = result.get('output').get('results')
 
+    statevector_out = None
     if ci.runner_mode == "shot":
         counts = {k: v / ci.shots for k, v in counts.items() }
+        sv_results = result.get('output').get('statevector_results')
+        if sv_results:
+            statevector_out = {k: str(v).replace('(', '').replace(')', '') for k, v in sv_results.items()}
     else:
-        counts = {k: v**2 for k, v in counts.items()}
+        statevector_out = {k: str(v).replace('(', '').replace(')', '') for k, v in counts.items()}
+        counts = {k: abs(v)**2 for k, v in counts.items()}
         
-    out = SimulationResult(probabilities = counts)
+    out = SimulationResult(probabilities=counts, statevector=statevector_out)
 
     return {"status": "success", "data": out}
