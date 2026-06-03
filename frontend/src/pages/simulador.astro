@@ -51,6 +51,25 @@ const apiBase = import.meta.env.PUBLIC_API_BASE_URL;
             </div>
         </div>
         
+        <!-- Parámetros de Compuerta Seleccionada -->
+        <div id="gate-params-container" class="gate-form-panel" style="display: none; margin-top: 1.5rem; border-color: var(--accent-purple);">
+            <h3 style="margin-top:0; font-size: 1rem; color: var(--accent-purple);">Parámetros: <span id="selected-gate-name"></span></h3>
+            <div class="form-group" id="params-inputs-container">
+                <!-- Generados via JS -->
+            </div>
+            <p style="font-size: 0.75rem; color: var(--koala-grey); margin-top: 0.5rem; margin-bottom: 0;">Presiona Enter o haz clic fuera para aplicar.</p>
+        </div>
+
+        <!-- Guardar Compuerta Personalizada -->
+        <div class="gate-form-panel" style="margin-top: 1.5rem; border-color: var(--primary-blue);">
+            <h3 style="margin-top:0; font-size: 1rem; color: var(--primary-blue);">Crear Compuerta</h3>
+            <p style="font-size: 0.8rem; color: var(--koala-grey); margin-bottom: 0.5rem; margin-top: 0;">Guarda el circuito actual como un bloque reutilizable.</p>
+            <div class="form-group">
+                <input type="text" id="custom_gate_name" placeholder="Nombre (ej: MY_BELL)" />
+            </div>
+            <button id="save-custom-gate-btn" class="btn btn-outline" style="width: 100%; margin-top: 0.5rem;">Guardar Circuito Actual</button>
+        </div>
+
         <div class="execute-section" style="margin-top: 2rem;">
             <button id="run-btn" class="btn btn-primary btn-massive">Ejecutar Simulación</button>
         </div>
@@ -342,6 +361,207 @@ input:focus, select:focus {
 </style>
 
 <script define:vars={{ apiBase }}>
+  window.apiBase = apiBase;
+
+  window.addEventListener('DOMContentLoaded', () => {
+      if (window.loadCustomGates) {
+          window.loadCustomGates();
+      }
+  });
+
+  window.onGateSelected = (gate, idx) => {
+      const container = document.getElementById('gate-params-container');
+      const nameEl = document.getElementById('selected-gate-name');
+      const inputsContainer = document.getElementById('params-inputs-container');
+      
+      const scalableGates = ['QFT', 'IQFT', 'MOD_EXP', 'CXX', 'HALF_ADD', 'FULL_ADD', 'OLD_FULL_ADD'];
+      const hasParams = gate && (gate.params !== undefined || scalableGates.includes(gate.type) || (gate.span && gate.span > 1));
+      
+      if (!gate || !hasParams) {
+          container.style.display = 'none';
+          return;
+      }
+      
+      container.style.display = 'block';
+      nameEl.innerText = gate.type;
+      inputsContainer.innerHTML = '';
+
+      
+      if (gate.type === 'INITIALIZE') {
+          const wrapper = document.createElement('div');
+          wrapper.style.display = 'flex';
+          wrapper.style.flexDirection = 'column';
+          wrapper.style.gap = '0.2rem';
+          wrapper.style.marginBottom = '0.8rem';
+
+          const label = document.createElement('label');
+          label.style.fontSize = '0.8rem';
+          label.style.color = 'var(--koala-grey)';
+          let input;
+          if (gate.type === 'INITIALIZE') {
+              input = document.createElement('textarea');
+              label.innerText = 'Amplitudes (α, β, ...)';
+              input.placeholder = 'ej: 0.707, 0.707\nPara 2 qubits:\n0.5, 0.5, 0.5, 0.5';
+          }
+          input.style.resize = 'vertical';
+          input.style.minHeight = '60px';
+          input.style.fontFamily = 'monospace';
+          // Para INITIALIZE, gate.params es el arreglo plano de amplitudes [1, 0]
+          input.value = gate.params.join(', ');
+          
+          input.addEventListener('input', function() {
+              this.style.height = 'auto';
+              this.style.height = (this.scrollHeight + 2) + 'px';
+          });
+          setTimeout(() => input.dispatchEvent(new Event('input')), 10);
+
+          input.addEventListener('change', (e) => {
+              let val = e.target.value;
+              let reqSpan = 1;
+              let valArr;
+              
+              if (!val.trim()) {
+                  valArr = [1, 0];
+              } else {
+                  valArr = val.split(',').map(v => parseFloat(v.trim()) || 0);
+                  reqSpan = Math.log2(valArr.length);
+                  if (!Number.isInteger(reqSpan) || reqSpan < 1) {
+                      reqSpan = Math.max(1, Math.ceil(reqSpan));
+                      let dim = Math.pow(2, reqSpan);
+                      while (valArr.length < dim) valArr.push(0);
+                  }
+              }
+              
+              if (window.updateSelectedGateParams) {
+                  window.updateSelectedGateParams(valArr, reqSpan);
+              }
+          });
+
+          wrapper.appendChild(label);
+          wrapper.appendChild(input);
+          inputsContainer.appendChild(wrapper);
+
+      } else {
+          // Mostrar campo de qubits para compuertas escalables o multi-qubit
+          const hasSpanControl = scalableGates.includes(gate.type) || (gate.span && gate.span > 1);
+          if (hasSpanControl) {
+              const wrapper = document.createElement('div');
+              wrapper.style.display = 'flex';
+              wrapper.style.flexDirection = 'column';
+              wrapper.style.gap = '0.2rem';
+              wrapper.style.marginBottom = '0.8rem';
+              
+              const label = document.createElement('label');
+              label.style.fontSize = '0.8rem';
+              label.style.color = 'var(--koala-grey)';
+              label.innerText = 'Cantidad de Qubits';
+
+              const input = document.createElement('input');
+              input.type = 'number';
+              input.min = gate.type === 'MOD_EXP' ? 5 : (gate.span || 1);
+              const maxSpan = window.circuitData.qubits - gate.target;
+              input.max = maxSpan;
+              input.value = gate.span || 1;
+
+              input.addEventListener('change', (e) => {
+                  let newSpan = parseInt(e.target.value) || parseInt(input.min);
+                  if (newSpan < parseInt(input.min)) newSpan = parseInt(input.min);
+                  if (newSpan > maxSpan) newSpan = maxSpan;
+                  input.value = newSpan;
+                  
+                  if (window.updateSelectedGateParams) {
+                      window.updateSelectedGateParams(gate.params, newSpan);
+                  }
+              });
+
+              wrapper.appendChild(label);
+              wrapper.appendChild(input);
+              inputsContainer.appendChild(wrapper);
+          }
+
+          // Add input for each param
+          if (gate.params) {
+              gate.params.forEach((param, pIdx) => {
+                  const wrapper = document.createElement('div');
+              wrapper.style.display = 'flex';
+              wrapper.style.flexDirection = 'column';
+              wrapper.style.gap = '0.2rem';
+              wrapper.style.marginBottom = '0.8rem';
+
+              const label = document.createElement('label');
+              label.style.fontSize = '0.8rem';
+              label.style.color = 'var(--koala-grey)';
+              if (gate.type === 'MOD_EXP') {
+                  label.innerText = pIdx === 0 ? 'Base "a" (ej: 7)' : 'Módulo "N" (fijo 15)';
+              } else {
+                  label.innerText = 'Ángulo de rotación θ (rad)';
+              }
+              
+              const input = document.createElement('input');
+              input.type = 'number';
+              input.step = 'any';
+              if (gate.type === 'MOD_EXP') {
+                  input.placeholder = pIdx === 0 ? '7' : '15';
+              } else {
+                  input.placeholder = 'ej: 3.1415';
+              }
+              input.value = param;
+              
+              input.addEventListener('change', (e) => {
+                  let val = parseFloat(e.target.value) || 0;
+                  const newParams = [...gate.params];
+                  newParams[pIdx] = val;
+                  if (window.updateSelectedGateParams) {
+                      window.updateSelectedGateParams(newParams, null);
+                  }
+              });
+              
+              wrapper.appendChild(label);
+              wrapper.appendChild(input);
+              inputsContainer.appendChild(wrapper);
+          });
+          }
+      }
+  };
+
+  document.getElementById("save-custom-gate-btn").addEventListener('click', async () => {
+      const name = document.getElementById("custom_gate_name").value.trim().toUpperCase().replace(/\s+/g, '_');
+      if (!name) return alert("Por favor ingresa un nombre para la compuerta.");
+      
+      const instructions = window.getLegacyInstructions ? window.getLegacyInstructions() : [];
+      if (instructions.length === 0) return alert("El circuito está vacío.");
+      
+      let maxQubit = 0;
+      instructions.forEach(inst => {
+          inst.qubits.forEach(q => {
+              if (q > maxQubit) maxQubit = q;
+          });
+      });
+      
+      const payload = {
+          name: name,
+          num_qubits: maxQubit + 1,
+          instructions: instructions
+      };
+      
+      try {
+          const response = await fetch(`${apiBase}/circuits/custom-gates`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(payload)
+          });
+          if (response.ok) {
+              alert(`Compuerta ${name} guardada con éxito.`);
+              if (window.loadCustomGates) window.loadCustomGates();
+              document.getElementById("custom_gate_name").value = "";
+          } else {
+              const err = await response.json();
+              alert("Error al guardar: " + JSON.stringify(err));
+          }
+      } catch (e) {
+          alert("Error de conexión: " + e.message);
+      }
+  });
 
   // Sincronizar qubits con la grilla
   document.getElementById("num_qubits").addEventListener("change", (e) => {
@@ -376,9 +596,19 @@ input:focus, select:focus {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload)
-    })
+    });
 
-    const retorno = await response.json()
+    if (!response.ok) {
+        let errMsg = "Error desconocido";
+        try {
+            const err = await response.json();
+            errMsg = err.detail || err.error || JSON.stringify(err);
+        } catch(e) {}
+        alert("Error en la simulación:\n\n" + errMsg);
+        return;
+    }
+
+    const retorno = await response.json();
     
     // Attach last gate info for Bloch sphere animation
     if (retorno.data && instructions.length > 0) {

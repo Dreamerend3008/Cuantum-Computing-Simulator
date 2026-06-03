@@ -43,6 +43,7 @@ class CircuitInput(BaseModel):
 #Output classes
 class SimulationResult(BaseModel):
     probabilities : dict[str, float]
+    statevector: dict[str, str] | None = None
 
 class CustomGateDef(BaseModel):
     name: str

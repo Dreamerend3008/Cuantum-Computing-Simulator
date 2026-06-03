@@ -3,23 +3,48 @@
 
 <div class="circuit-builder">
     <div class="toolbox" id="toolbox">
-        <h3 class="toolbox-title">Compuertas</h3>
-        <div class="gate-palette">
-            <!-- 1 Qubit Gates -->
-            <div class="gate draggable" draggable="true" data-type="H" style="--gate-color: var(--primary-blue);">H</div>
-            <div class="gate draggable" draggable="true" data-type="X" style="--gate-color: var(--accent-green);">X</div>
-            <div class="gate draggable" draggable="true" data-type="Y" style="--gate-color: var(--accent-green);">Y</div>
-            <div class="gate draggable" draggable="true" data-type="Z" style="--gate-color: var(--accent-green);">Z</div>
-            <div class="gate draggable" draggable="true" data-type="S" style="--gate-color: var(--accent-orange);">S</div>
-            <div class="gate draggable" draggable="true" data-type="T" style="--gate-color: var(--accent-orange);">T</div>
-            
-            <!-- 2 Qubit Gates -->
-            <div class="gate draggable gate-2q" draggable="true" data-type="CX" style="--gate-color: var(--accent-pink);">CX</div>
-            <div class="gate draggable gate-2q" draggable="true" data-type="SWAP" style="--gate-color: var(--accent-pink);">SWAP</div>
-            
-            <!-- Operations -->
-            <div class="gate draggable" draggable="true" data-type="Measure" style="--gate-color: var(--koala-grey);">M</div>
+        <div class="toolbox-tabs">
+            <button class="tab-btn active" data-target="tab-basicas">Básicas</button>
+            <button class="tab-btn" data-target="tab-avanzadas">Avanzadas</button>
+            <button class="tab-btn" data-target="tab-personalizadas">Personalizadas</button>
         </div>
+
+        <div id="tab-basicas" class="tab-pane active">
+            <div class="gate-palette">
+                <div class="gate draggable" draggable="true" data-type="H" style="--gate-color: var(--primary-blue);">H</div>
+                <div class="gate draggable" draggable="true" data-type="X" style="--gate-color: var(--accent-green);">X</div>
+                <div class="gate draggable" draggable="true" data-type="Y" style="--gate-color: var(--accent-green);">Y</div>
+                <div class="gate draggable" draggable="true" data-type="Z" style="--gate-color: var(--accent-green);">Z</div>
+                <div class="gate draggable" draggable="true" data-type="S" style="--gate-color: var(--accent-orange);">S</div>
+                <div class="gate draggable" draggable="true" data-type="T" style="--gate-color: var(--accent-orange);">T</div>
+                <div class="gate draggable gate-2q" draggable="true" data-type="CX" style="--gate-color: var(--accent-pink);">CX</div>
+                <div class="gate draggable gate-2q" draggable="true" data-type="SWAP" style="--gate-color: var(--accent-pink);">SWAP</div>
+                <div class="gate draggable" draggable="true" data-type="RX" data-params="true" style="--gate-color: var(--accent-purple);">RX</div>
+                <div class="gate draggable" draggable="true" data-type="RY" data-params="true" style="--gate-color: var(--accent-purple);">RY</div>
+                <div class="gate draggable" draggable="true" data-type="RZ" data-params="true" style="--gate-color: var(--accent-purple);">RZ</div>
+                <div class="gate draggable" draggable="true" data-type="INITIALIZE" data-params="true" style="--gate-color: var(--accent-purple);">INIT</div>
+                <div class="gate draggable" draggable="true" data-type="Measure" style="--gate-color: var(--koala-grey);">M</div>
+            </div>
+        </div>
+        
+        <div id="tab-avanzadas" class="tab-pane">
+            <div class="gate-palette" style="align-content: flex-start;">
+                <div class="gate draggable gate-custom" draggable="true" data-type="CXX" data-span="3" style="background: var(--primary-blue) !important;">CXX</div>
+                <div class="gate draggable gate-custom" draggable="true" data-type="HALF_ADD" data-span="4" style="background: var(--accent-orange) !important;">HALF_ADD</div>
+                <div class="gate draggable gate-custom" draggable="true" data-type="FULL_ADD" data-span="4" style="background: var(--accent-orange) !important;">FULL_ADD</div>
+                <div class="gate draggable gate-custom" draggable="true" data-type="OLD_FULL_ADD" data-span="8" style="background: var(--accent-orange) !important;">OLD_F_ADD</div>
+                <div class="gate draggable gate-custom" draggable="true" data-type="QFT" data-span="3" style="background: var(--accent-green) !important;">QFT</div>
+                <div class="gate draggable gate-custom" draggable="true" data-type="IQFT" data-span="3" style="background: var(--accent-green) !important;">IQFT</div>
+                <div class="gate draggable gate-custom" draggable="true" data-type="MOD_EXP" data-span="5" data-params="true" style="background: var(--koala-grey) !important;">MOD_EXP</div>
+            </div>
+        </div>
+        
+        <div id="tab-personalizadas" class="tab-pane">
+            <div class="gate-palette" id="custom-gates-palette" style="min-height: 58px;">
+                <!-- Cargadas via JS -->
+            </div>
+        </div>
+
         <div id="builder-status" class="builder-status">
             Arrastra una compuerta hacia la grilla temporal.
         </div>
@@ -47,12 +72,44 @@
         padding: 1rem;
     }
 
-    .toolbox-title {
-        font-size: 0.9rem;
+    .toolbox-tabs {
+        display: flex;
+        gap: 0.5rem;
+        margin-bottom: 1rem;
+        border-bottom: 2px solid rgba(0,0,0,0.05);
+        padding-bottom: 0.5rem;
+    }
+
+    .tab-btn {
+        background: transparent;
+        border: none;
         color: var(--koala-grey);
-        margin: 0 0 0.75rem 0;
+        font-family: 'Quicksand', sans-serif;
+        font-weight: 700;
+        font-size: 0.85rem;
+        cursor: pointer;
+        padding: 0.25rem 0.5rem;
+        border-radius: 4px;
+        transition: background 0.2s, color 0.2s;
         text-transform: uppercase;
         letter-spacing: 0.05em;
+    }
+
+    .tab-btn.active {
+        background: rgba(37, 150, 190, 0.1);
+        color: var(--primary-blue);
+    }
+
+    .tab-btn:hover:not(.active) {
+        background: rgba(0,0,0,0.05);
+    }
+
+    .tab-pane {
+        display: none;
+    }
+
+    .tab-pane.active {
+        display: block;
     }
 
     .gate-palette {
@@ -85,6 +142,31 @@
 
     .gate-2q {
         border-bottom: 3px solid rgba(0,0,0,0.3); /* Indicator for 2 qubits */
+    }
+
+    :global(.gate-custom) {
+        width: auto;
+        min-width: 40px;
+        max-width: 80px;
+        padding: 0 0.5rem;
+        font-size: 0.8rem;
+        font-family: 'Quicksand', sans-serif;
+        font-weight: 700;
+        letter-spacing: 0.05em;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        border: none;
+        border-radius: 6px;
+        background: linear-gradient(135deg, var(--accent-purple) 0%, var(--accent-pink) 100%) !important;
+        color: white !important;
+        box-shadow: 0 4px 10px rgba(142, 68, 173, 0.3) !important;
+        text-shadow: 0 1px 2px rgba(0,0,0,0.2);
+    }
+    
+    /* Para que el botón 'x' de eliminar no se corte en las compuertas ya colocadas */
+    :global(.placed-gate) {
+        overflow: visible !important;
     }
 
     .builder-status {
@@ -200,9 +282,15 @@
         transform: translateX(-50%);
     }
 
-    /* Delete button on hover */
-    :global(.placed-gate:hover::after) {
-        content: '✕';
+    :global(.placed-gate.selected) {
+        box-shadow: 0 0 0 3px var(--accent-pink), 0 2px 10px rgba(0,0,0,0.3);
+        transform: scale(1.05);
+        z-index: 15;
+    }
+
+    /* Delete button */
+    :global(.delete-gate-btn) {
+        display: none;
         position: absolute;
         top: -8px;
         right: -8px;
@@ -212,11 +300,17 @@
         height: 16px;
         font-size: 10px;
         border-radius: 50%;
-        display: flex;
         align-items: center;
         justify-content: center;
+        border: none;
+        cursor: pointer;
+        padding: 0;
+        line-height: 1;
     }
-    :global(.placed-gate.cx-control:hover::after) {
+    :global(.placed-gate:hover .delete-gate-btn) {
+        display: flex;
+    }
+    :global(.placed-gate.cx-control:hover .delete-gate-btn) {
         display: none; /* Only delete from target */
     }
 </style>
@@ -232,13 +326,16 @@
     
     // UI Interaction state
     let draggedGateType = null;
+    let draggedGateNeedsParams = false;
     let pendingTwoClickGate = null; // { type, target, time }
+    let selectedGateIdx = null;
 
     // Colors mapping (same as CSS vars roughly)
     const gateColors = {
         'H': '#2596be', 'X': '#73fd3d', 'Y': '#73fd3d', 'Z': '#73fd3d',
         'S': '#f99b0f', 'T': '#f99b0f', 'Measure': '#808e8f',
-        'CX': '#e938b0', 'SWAP': '#e938b0'
+        'CX': '#e938b0', 'SWAP': '#e938b0',
+        'RX': '#8E44AD', 'RY': '#8E44AD', 'RZ': '#8E44AD', 'INITIALIZE': '#8E44AD'
     };
 
     // DOM Elements
@@ -266,14 +363,72 @@
                 let qubits = [];
                 if (g.control !== undefined) {
                     qubits = [g.control, g.target];
+                } else if (g.span > 1) {
+                    for (let i = 0; i < g.span; i++) {
+                        qubits.push(g.target + i);
+                    }
                 } else {
                     qubits = [g.target];
                 }
-                return {
+                let instruction = {
                     name: g.type,
                     qubits: qubits
                 };
+                if (g.params !== undefined) {
+                    instruction.params = g.params;
+                }
+                return instruction;
             });
+        };
+
+        // Update a gate's parameters from outside
+        window.updateSelectedGateParams = function(newParams, newSpan = null) {
+        if (selectedGateIdx !== null) {
+            window.circuitData.gates[selectedGateIdx].params = newParams;
+            if (newSpan !== null) {
+                window.circuitData.gates[selectedGateIdx].span = newSpan;
+            }
+            renderGrid();
+        }
+    };
+
+        // Load custom gates from backend
+        window.loadCustomGates = async () => {
+            try {
+                const res = await fetch(`${window.apiBase || 'http://localhost:8000'}/circuits/custom-gates`);
+                if (!res.ok) return;
+                const customGates = await res.json();
+                
+                const palette = document.getElementById('custom-gates-palette');
+                palette.innerHTML = '';
+                
+                customGates.forEach(cg => {
+                    const el = document.createElement('div');
+                    el.className = 'gate draggable gate-custom';
+                    el.draggable = true;
+                    el.dataset.type = cg.name;
+                    el.dataset.num_qubits = cg.num_qubits;
+                    el.style.setProperty('--gate-color', 'var(--accent-purple)');
+                    el.innerText = cg.name;
+                    el.title = cg.name; // Tooltip to see full name
+                    
+                    el.addEventListener('dragstart', (e) => {
+                        if (pendingTwoClickGate) cancelTwoClick();
+                        draggedGateType = e.target.getAttribute('data-type');
+                        draggedGateNeedsParams = false;
+                        e.dataTransfer.setData('text/plain', draggedGateType);
+                        e.dataTransfer.setData('num_qubits', cg.num_qubits);
+                        e.dataTransfer.effectAllowed = 'copy';
+                    });
+                    el.addEventListener('dragend', () => {
+                        draggedGateType = null;
+                    });
+                    
+                    palette.appendChild(el);
+                });
+            } catch (err) {
+                console.error("Error loading custom gates:", err);
+            }
         };
 
         // Setup drag events for toolbox
@@ -281,15 +436,27 @@
             el.addEventListener('dragstart', (e) => {
                 if (pendingTwoClickGate) cancelTwoClick(); // Cancel any pending action
                 draggedGateType = e.target.getAttribute('data-type');
+                draggedGateNeedsParams = e.target.hasAttribute('data-params');
                 e.dataTransfer.setData('text/plain', draggedGateType);
+                const span = e.target.getAttribute('data-span') || 1;
+                e.dataTransfer.setData('num_qubits', span);
                 e.dataTransfer.effectAllowed = 'copy';
             });
             el.addEventListener('dragend', () => {
                 draggedGateType = null;
+                draggedGateNeedsParams = false;
             });
         });
 
-        // Click on toolbox instead of drag (Optional feature, but let's stick to drag for now)
+        // Setup Tabs
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+                document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+                e.target.classList.add('active');
+                document.getElementById(e.target.dataset.target).classList.add('active');
+            });
+        });
 
         renderGrid();
     }
@@ -370,13 +537,45 @@
             }
         } else {
             gateEl.innerText = gate.type;
-            gateEl.style.backgroundColor = gateColors[gate.type] || 'var(--primary-blue)';
+            gateEl.style.backgroundColor = gateColors[gate.type] || 'var(--accent-purple)';
+            
+            // Si es multi-qubit (Custom Gate)
+            if (gate.span > 1) {
+                gateEl.style.position = 'absolute';
+                gateEl.style.top = '7px'; // Center in first cell
+                gateEl.style.height = `${(gate.span - 1) * 50 + 36}px`;
+                gateEl.style.zIndex = '8';
+                // Añadir clase custom para ajustar el texto
+                gateEl.classList.add('gate-custom');
+                gateEl.style.border = 'none'; // reset border
+                gateEl.style.writingMode = 'vertical-rl';
+                gateEl.style.textOrientation = 'mixed';
+                gateEl.style.maxWidth = '36px'; // keep width consistent
+            } else if (gate.type.length > 2 && gate.type !== 'INITIALIZE') {
+                gateEl.classList.add('gate-custom');
+                gateEl.style.border = 'none';
+                gateEl.style.maxWidth = '36px';
+            }
+        }
+
+        if (idx === selectedGateIdx) {
+            gateEl.classList.add('selected');
         }
 
         gateEl.addEventListener('click', (e) => {
             e.stopPropagation();
+            selectGate(idx);
+        });
+
+        // Delete button
+        const delBtn = document.createElement('button');
+        delBtn.className = 'delete-gate-btn';
+        delBtn.innerHTML = '✕';
+        delBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
             removeGate(idx);
         });
+        gateEl.appendChild(delBtn);
 
         cell.appendChild(gateEl);
 
@@ -422,9 +621,18 @@
     // --- DRAG & DROP LOGIC ---
 
     function isCellOccupied(q, t) {
-        return window.circuitData.gates.some(g => 
-            (g.time == t) && (g.target == q || g.control == q)
-        );
+        return window.circuitData.gates.some(g => {
+            if (g.time != t) return false;
+            if (g.target == q || g.control == q) return true;
+            if (g.span > 1 && q >= g.target && q < g.target + g.span) return true;
+            // Check if the cell falls between control and target of a multi-qubit gate like CX
+            if (g.control !== undefined) {
+                const minQ = Math.min(g.target, g.control);
+                const maxQ = Math.max(g.target, g.control);
+                if (q >= minQ && q <= maxQ) return true;
+            }
+            return false;
+        });
     }
 
     function isColumnOccupied(t) {
@@ -459,8 +667,17 @@
 
         const q = parseInt(e.currentTarget.dataset.q);
         const t = parseInt(e.currentTarget.dataset.t);
+        const numQubits = parseInt(e.dataTransfer.getData('num_qubits')) || 1;
 
-        if (isCellOccupied(q, t)) return;
+        if (q + numQubits > window.circuitData.qubits) {
+            statusEl.innerText = "La compuerta requiere más qubits de los disponibles hacia abajo.";
+            return;
+        }
+
+        // check if any cell in the span is occupied
+        for (let i = 0; i < numQubits; i++) {
+            if (isCellOccupied(q + i, t)) return;
+        }
 
         if (type === 'CX' || type === 'SWAP') {
             // Initiate 2-click phase
@@ -469,8 +686,22 @@
             statusEl.style.color = "var(--accent-pink)";
             renderGrid(); // This will highlight clickable control cells
         } else {
-            // Single qubit gate
-            window.circuitData.gates.push({ type, target: q, time: t });
+            // Single qubit gate or Custom multi-qubit gate
+            let newGate = { type, target: q, time: t, span: numQubits };
+            
+            // Check if parameterized gate
+            if (['RX', 'RY', 'RZ'].includes(type)) {
+                newGate.params = [3.14159]; // Default pi
+            } else if (type === 'INITIALIZE') {
+                newGate.params = [1.0, 0.0]; // Default |0>
+            } else if (type === 'MOD_EXP') {
+                newGate.params = [7, 15]; // Default a=7, N=15
+            } else if (draggedGateNeedsParams) {
+                newGate.params = [0]; // Fallback
+            }
+            
+            window.circuitData.gates.push(newGate);
+            selectGate(window.circuitData.gates.length - 1);
             renderGrid();
         }
     }
@@ -517,8 +748,31 @@
     document.addEventListener('keydown', (e) => {
         if (e.key === 'Escape') cancelTwoClick();
     });
+    
+    // Deselect if click outside gates
+    gridEl.addEventListener('click', () => {
+        if (selectedGateIdx !== null) {
+            selectedGateIdx = null;
+            if (window.onGateSelected) window.onGateSelected(null);
+            renderGrid();
+        }
+    });
+
+    function selectGate(idx) {
+        selectedGateIdx = idx;
+        renderGrid();
+        if (window.onGateSelected) {
+            window.onGateSelected(window.circuitData.gates[idx], idx);
+        }
+    }
 
     function removeGate(idx) {
+        if (selectedGateIdx === idx) {
+            selectedGateIdx = null;
+            if (window.onGateSelected) window.onGateSelected(null);
+        } else if (selectedGateIdx > idx) {
+            selectedGateIdx--;
+        }
         window.circuitData.gates.splice(idx, 1);
         renderGrid();
     }

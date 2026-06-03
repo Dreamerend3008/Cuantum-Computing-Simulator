@@ -49,6 +49,14 @@ def simulate_circuit(circuit_dict: dict, start_time: float) -> dict:
         
         raw_counts = output["info"].get_counts()
         output["results"] = {k[::-1]: v for k, v in raw_counts.items()}
+        
+        # New: Get statevector behind the scenes for Bloch sphere visualization
+        try:
+            q_circuit_sv = q_circuit.copy()
+            q_circuit_sv.remove_final_measurements()
+            output["statevector_results"] = run_statevector_simulation(qc=q_circuit_sv)
+        except Exception:
+            output["statevector_results"] = None
     elif runner_mode == "statevector":
         # Measurment breaks the logic expected for a staetvector simulator
         if any(instr.get("name") == "MEASURE_ALL" or instr.get("name") == "MEASURE" for instr in instructions):
