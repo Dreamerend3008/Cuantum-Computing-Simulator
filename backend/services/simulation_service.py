@@ -50,7 +50,6 @@ def simulate_circuit(circuit_dict: dict, start_time: float) -> dict:
         raw_counts = output["info"].get_counts()
         output["results"] = {k[::-1]: v for k, v in raw_counts.items()}
         
-        # New: Get statevector behind the scenes for Bloch sphere visualization
         try:
             q_circuit_sv = q_circuit.copy()
             q_circuit_sv.remove_final_measurements()
@@ -81,7 +80,6 @@ def simulate_circuit(circuit_dict: dict, start_time: float) -> dict:
             }
 
 
-# Example usage
 if __name__ == "__main__":
     start_time = time.time()
     simulation_result = simulate_circuit(example_dict, start_time)

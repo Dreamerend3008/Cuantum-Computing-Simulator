@@ -396,6 +396,8 @@
     }
 
     // Attempt to compute from full statevector if available (has phase info)
+    // svArray is in CLASSICAL order (big-endian): index 0 = |00...0⟩, index 1 = |00...1⟩
+    // In classical notation, qubit 0 is the LEFTMOST (most significant) bit.
     function blochFromStatevector(svArray, qubitIndex, nQubits) {
         if (!svArray || svArray.length < 2) return null;
         const dim = 1 << nQubits;
@@ -408,7 +410,9 @@
 
         // Reduced density matrix for qubit q (2x2)
         const rho = [[{r:0,i:0},{r:0,i:0}],[{r:0,i:0},{r:0,i:0}]];
-        const qBitMask = 1 << qubitIndex;
+        // Classical (big-endian): qubit 0 is MSB, so bit position = nQubits - 1 - qubitIndex
+        const bitPosition = nQubits - 1 - qubitIndex;
+        const qBitMask = 1 << bitPosition;
 
         for (let a = 0; a < 2; a++) {
             for (let b = 0; b < 2; b++) {
